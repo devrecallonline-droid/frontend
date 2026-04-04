@@ -492,11 +492,11 @@ const EventDetailPage = () => {
     }, []);
 
     useEffect(() => {
-        // Only redirect if not authenticated AND not showing access error
-        if (mounted && !isAuthenticated && !isAccessError) {
+        // Only redirect if not authenticated AND not showing access error AND details have finished loading
+        if (mounted && !isAuthenticated && !isAccessError && !detailsLoading) {
             router.push('/auth');
         }
-    }, [mounted, isAuthenticated, router, isAccessError]);
+    }, [mounted, isAuthenticated, router, isAccessError, detailsLoading]);
 
     // Infinite scroll observer
     useEffect(() => {
@@ -673,96 +673,111 @@ const EventDetailPage = () => {
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center pt-32">
                     {isAccessError ? (
                         <>
-                            {/* Event Info Card */}
-                            {eventFromError && (
-                                <div className="mb-8 p-8 bg-white border border-titanium/10 rounded-2xl max-w-lg w-full shadow-sm">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Badge variant="secondary" className="bg-titanium/5 text-titanium">
-                                            Private Event
-                                        </Badge>
-                                    </div>
-                                    <h1 className="text-3xl font-black text-titanium mb-3 tracking-tight">
-                                        {eventFromError.title}
-                                    </h1>
-                                    {eventFromError.description && (
-                                        <p className="text-titanium/60 font-medium mb-4">
-                                            {eventFromError.description}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center gap-4 text-sm text-titanium/40">
-                                        {eventFromError.event_date && (
-                                            <span className="flex items-center gap-1">
-                                                <Calendar className="w-4 h-4" />
-                                                {new Date(eventFromError.event_date).toLocaleDateString()}
-                                            </span>
-                                        )}
-                                        {eventFromError.location && (
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="w-4 h-4" />
-                                                {eventFromError.location}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            <h2 className="text-2xl font-black text-titanium mb-3 italic tracking-tight">Access Required</h2>
-                            <p className="text-titanium/40 font-medium mb-8 max-w-md mx-auto">
-                                You need to request access to view photos and use face search in this event.
-                            </p>
-
-                            {eventOwnerFromError && (
-                                <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl max-w-md">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-black">
-                                            {eventOwnerFromError.username?.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-blue-900">{eventOwnerFromError.username}</p>
-                                            <p className="text-sm text-blue-700">Event Owner</p>
-                                        </div>
-                                    </div>
-
-                                    {accessStatusFromError?.status === 'pending' ? (
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center gap-2 mb-2">
-                                                <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
-                                                <span className="font-bold text-amber-700">Access Request Pending</span>
+                            {/* Premium E-Ticket Invitation */}
+                            {eventFromError && eventOwnerFromError && (
+                                <div className="mb-12 w-full max-w-sm mx-auto animate-in fade-in zoom-in duration-700">
+                                    <div className="relative bg-white shadow-2xl rounded-[2rem] overflow-hidden flex flex-col border border-titanium/5">
+                                        
+                                        {/* Ticket Top Section: Event Info */}
+                                        <div className="p-8 pb-6 flex flex-col items-center text-center">
+                                            <div className="w-14 h-14 bg-titanium text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg mb-4 ring-4 ring-titanium/5">
+                                                {eventOwnerFromError.username?.charAt(0).toUpperCase()}
                                             </div>
-                                            <p className="text-sm text-amber-600">
-                                                Your request is waiting for approval. You will be able to view this event once approved.
+
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-titanium/40 mb-1">
+                                                Exclusive Invitation
                                             </p>
+                                            
+                                            <h2 className="text-sm font-bold text-titanium mb-4">
+                                                {eventOwnerFromError.username} <span className="font-medium text-titanium/40">invites you to the private vault of</span>
+                                            </h2>
+
+                                            <h1 className="text-2xl font-black text-titanium mb-2 tracking-tight leading-none uppercase italic">
+                                                {eventFromError.title}
+                                            </h1>
+
+                                            {eventFromError.description && (
+                                                <p className="text-titanium/50 font-medium text-xs line-clamp-2 px-4">
+                                                    {eventFromError.description}
+                                                </p>
+                                            )}
                                         </div>
-                                    ) : requiresAuth ? (
-                                        <div className="text-center">
-                                            <p className="text-sm text-blue-600 mb-4">
-                                                You need to log in or create an account to request access to this event.
-                                            </p>
-                                            <Button
-                                                onClick={() => router.push('/auth')}
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                                            >
-                                                <Lock className="w-4 h-4 mr-2" />
-                                                Log In to Request Access
-                                            </Button>
+
+                                        {/* Perforation Divider */}
+                                        <div className="relative flex items-center px-4">
+                                            {/* Left Hole */}
+                                            <div className="absolute left-[-12px] w-6 h-6 bg-ivory rounded-full border border-titanium/5 shadow-inner"></div>
+                                            {/* Dashed Line */}
+                                            <div className="flex-1 border-t-2 border-dashed border-titanium/10 mx-2"></div>
+                                            {/* Right Hole */}
+                                            <div className="absolute right-[-12px] w-6 h-6 bg-ivory rounded-full border border-titanium/5 shadow-inner"></div>
                                         </div>
-                                    ) : (
-                                        <Button
-                                            onClick={async () => {
-                                                try {
-                                                    await requestEventAccess(eventId).unwrap();
-                                                    addAlert({ type: 'success', message: `Access request sent to event owner!` });
-                                                    window.location.reload();
-                                                } catch (err) {
-                                                    addAlert({ type: 'error', message: 'Failed to send access request.' });
-                                                }
-                                            }}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                                        >
-                                            <Lock className="w-4 h-4 mr-2" />
-                                            Request Access to Event
-                                        </Button>
-                                    )}
+
+                                        {/* Ticket Bottom Section: Details & Action */}
+                                        <div className="p-8 pt-6 bg-gray-50/50 flex flex-col items-center">
+                                            <div className="grid grid-cols-2 gap-4 w-full mb-8">
+                                                <div className="flex flex-col items-start gap-1 p-3 bg-white rounded-xl border border-titanium/5">
+                                                    <span className="text-[8px] font-bold uppercase tracking-widest text-titanium/30">Date</span>
+                                                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-titanium">
+                                                        <Calendar className="w-3 h-3 text-indigo-500" />
+                                                        {new Date(eventFromError.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-start gap-1 p-3 bg-white rounded-xl border border-titanium/5">
+                                                    <span className="text-[8px] font-bold uppercase tracking-widest text-titanium/30">Location</span>
+                                                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-titanium truncate w-full">
+                                                        <MapPin className="w-3 h-3 text-indigo-500" />
+                                                        <span className="truncate">{eventFromError.location || 'TBA'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full flex flex-col gap-5">
+                                                <p className="text-sm text-center text-titanium/70 font-medium leading-relaxed px-4">
+                                                    Unlock the Vault to explore high-resolution photos, share your own moments, and instantly find every picture you’re in—without the endless scrolling
+                                                </p>
+
+                                                {accessStatusFromError?.status === 'pending' ? (
+                                                    <div className="w-full bg-amber-50 border border-amber-100 rounded-xl p-4 flex flex-col items-center gap-2">
+                                                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                                        <span className="text-xs font-bold text-amber-900 uppercase tracking-widest">Entry Pending</span>
+                                                    </div>
+                                                ) : requiresAuth ? (
+                                                    <Button
+                                                        onClick={() => router.push(`/auth?returnUrl=/events/${eventId}`)}
+                                                        className="w-full h-14 bg-titanium hover:bg-black text-white rounded-2xl shadow-xl shadow-titanium/20 transition-all font-black uppercase tracking-widest text-xs"
+                                                    >
+                                                        Admit One
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={async () => {
+                                                            try {
+                                                                await requestEventAccess(eventId).unwrap();
+                                                                addAlert({ type: 'success', message: `Vault entry requested!` });
+                                                                window.location.reload();
+                                                            } catch (err) {
+                                                                addAlert({ type: 'error', message: 'Failed to request entry.' });
+                                                            }
+                                                        }}
+                                                        className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 transition-all font-black uppercase tracking-widest text-xs"
+                                                    >
+                                                        Claim Ticket
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                            {/* Decorative Footer */}
+                                            <div className="mt-8 flex flex-col items-center gap-2 opacity-20">
+                                                <div className="flex gap-0.5">
+                                                    {[...Array(12)].map((_, i) => (
+                                                        <div key={i} className={`w-1 h-3 bg-titanium ${i % 3 === 0 ? 'h-4' : ''}`}></div>
+                                                    ))}
+                                                </div>
+                                                <span className="text-[8px] font-mono font-bold">{eventId.slice(0, 8).toUpperCase()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 

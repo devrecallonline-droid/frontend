@@ -3,12 +3,18 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-api';
-import { UserCircle, ShieldCheck } from 'lucide-react';
+import { UserCircle, ShieldCheck, Bell } from 'lucide-react';
+import { useGetEventAccessRequestsQuery } from '@/lib/api';
 import { Button } from './ui';
 
 const Navigation = () => {
     const { user, isAuthenticated } = useAuth();
+    const { data: requestsData } = useGetEventAccessRequestsQuery(undefined, { 
+        skip: !isAuthenticated,
+        pollingInterval: 30000 // Poll every 30s for new requests
+    });
     const router = useRouter();
+    const pendingCount = requestsData?.count || 0;
 
     return (
         <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-[40] w-full max-w-4xl px-4 flex justify-center">
@@ -25,15 +31,23 @@ const Navigation = () => {
                         { name: 'Events', href: '/events' },
                         { name: 'Collections', href: '/collections' },
                         { name: 'Profile', href: '/profile' }
-                    ].map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            className="px-3 sm:px-4 py-2 hover:bg-black/5 rounded-full text-xs sm:text-sm font-medium transition-colors text-titanium/60 hover:text-titanium whitespace-nowrap"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                    ].map((link) => {
+                        const isEvents = link.href === '/events';
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className="px-3 sm:px-4 py-2 hover:bg-black/5 rounded-full text-xs sm:text-sm font-medium transition-colors text-titanium/60 hover:text-titanium whitespace-nowrap relative"
+                            >
+                                {link.name}
+                                {isEvents && pendingCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full animate-pulse border-2 border-white">
+                                        {pendingCount > 9 ? '9+' : pendingCount}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 {/* Auth / User Section */}

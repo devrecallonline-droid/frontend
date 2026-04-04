@@ -28,7 +28,14 @@ const AuthPage = () => {
 
     useEffect(() => {
         if (mounted && isAuthenticated) {
-            router.push('/events');
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnUrl = urlParams.get('returnUrl');
+            
+            if (returnUrl && returnUrl.startsWith('/')) {
+                router.push(returnUrl);
+            } else {
+                router.push('/events');
+            }
         }
     }, [mounted, isAuthenticated, router]);
 

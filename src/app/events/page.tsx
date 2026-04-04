@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUI } from '@/hooks/use-api';
-import { useGetEventsQuery, useCreateEventMutation, useDeleteEventMutation } from '@/lib/api';
+import { useGetEventsQuery, useCreateEventMutation, useDeleteEventMutation, useGetEventAccessRequestsQuery } from '@/lib/api';
 import Navigation from '@/components/Navigation';
 import { Button, Card, Badge, Input } from '@/components/ui';
 import {
@@ -17,13 +17,15 @@ import {
     Activity,
     Share2,
     Upload as UploadIcon,
-    Trash2
+    Trash2,
+    Bell
 } from 'lucide-react';
 import { CreateEventModal } from '@/components/CreateEventModal';
 
 const EventsPage = () => {
     const { isAuthenticated, user } = useAuth();
     const { data: events, isLoading, refetch } = useGetEventsQuery();
+    const { data: requestsData } = useGetEventAccessRequestsQuery(undefined, { skip: !isAuthenticated });
     const [createEvent, { isLoading: isCreating }] = useCreateEventMutation();
     const [deleteEvent] = useDeleteEventMutation();
     const router = useRouter();
@@ -89,6 +91,33 @@ const EventsPage = () => {
                         </Button>
                     </div>
                 </header>
+                
+                {requestsData && requestsData.count > 0 && (
+                    <section className="mb-12 animate-slide-up">
+                         <Card className="bg-red-500/5 border-red-500/10 p-6 flex items-center justify-between group cursor-pointer hover:bg-red-500/10 transition-colors"
+                               onClick={() => router.push('/event-access-requests')}>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-500/20">
+                                    <Bell className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-titanium tracking-tight">Access Requests</h3>
+                                    <p className="text-titanium/50 font-medium">{requestsData.count} {requestsData.count === 1 ? 'guest is' : 'guests are'} waiting to enter your private vaults.</p>
+                                </div>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                className="border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-full font-bold"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    router.push('/event-access-requests');
+                                }}
+                            >
+                                Review All
+                            </Button>
+                        </Card>
+                    </section>
+                )}
 
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-40 animate-slide-up">

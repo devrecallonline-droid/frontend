@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Textarea, Modal, Badge } from './ui';
-import { Calendar, MapPin, X, Sparkles, Loader2, Link as LinkIcon, Check } from 'lucide-react';
-import { useCreateEventMutation } from '@/lib/api';
+import { Calendar, MapPin, X, Sparkles, Loader2, Link as LinkIcon, Check, ListFilter } from 'lucide-react';
+import { useCreateEventMutation, useGetEventTypesQuery } from '@/lib/api';
 
 interface CreateEventModalProps {
     isOpen: boolean;
@@ -15,11 +15,13 @@ interface CreateEventModalProps {
 export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModalProps) => {
     const router = useRouter();
     const [createEvent, { isLoading }] = useCreateEventMutation();
+    const { data: eventTypes = [], isLoading: isLoadingTypes } = useGetEventTypesQuery();
     const [step, setStep] = useState<'form' | 'success'>('form');
     const [createdEvent, setCreatedEvent] = useState<any>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
+        event_type: '',
         location: '',
         event_date: ''
     });
@@ -56,7 +58,7 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
 
     const resetAndClose = () => {
         setStep('form');
-        setFormData({ title: '', description: '', location: '', event_date: '' });
+        setFormData({ title: '', description: '', event_type: '', location: '', event_date: '' });
         onClose();
         if (step === 'success') {
             onSuccess();
@@ -92,6 +94,24 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
                                     value={formData.title}
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-titanium/40 ml-1">Event Type</label>
+                                <div className="relative">
+                                    <ListFilter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-titanium/30 pointer-events-none" />
+                                    <select
+                                        className="w-full bg-titanium/5 border border-titanium/10 rounded-apple-lg px-12 py-3 text-titanium focus:outline-none focus:ring-2 focus:ring-titanium/20 transition-all appearance-none"
+                                        value={formData.event_type}
+                                        onChange={e => setFormData({ ...formData, event_type: e.target.value })}
+                                        disabled={isLoadingTypes}
+                                    >
+                                        <option value="" disabled>Select event type...</option>
+                                        {eventTypes.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="space-y-2">

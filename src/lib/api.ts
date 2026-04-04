@@ -6,6 +6,7 @@ export interface Event {
     id: string;
     title: string;
     description?: string;
+    event_type?: string;
     event_date?: string;
     location?: string;
     owner_id: string;
@@ -82,9 +83,24 @@ const baseQuery = fetchBaseQuery({
 
 const baseQueryWithErrorHandling = async (args: any, api: any, extraOptions: any) => {
     const result = await baseQuery(args, api, extraOptions);
-    if (result.error && Object.keys(result.error).length > 0) {
-        // Only log if error has actual content
-        console.error('API Error:', result.error);
+    if (result.error) {
+        const error = result.error as any;
+        
+        // Suppress 401 errors (unauthorized) and 404 (not found) from the global logger
+        // since they are expected and handled by specific components or auth redirects
+        if (error.status === 401 || error.status === 404) return result;
+
+        // Construct a clean, informative error log
+        const errorInfo: Record<string, any> = {
+            url: typeof args === 'string' ? args : (args.url || args),
+            status: error.status || 'PARSING_ERROR',
+            data: error.data || 'No response body',
+        };
+
+        if (error.error) errorInfo.error = error.error; // standard in FetchBaseQueryError for network errors
+        if (error.message) errorInfo.message = error.message; // standard in SerializedError
+
+        console.error('API Error:', JSON.stringify(errorInfo, null, 2));
     }
     return result;
 };
@@ -135,6 +151,10 @@ export const apiSlice = createApi({
                         { type: 'Event', id: 'LIST' },
                     ]
                     : [{ type: 'Event', id: 'LIST' }],
+        }),
+        getEventTypes: builder.query<string[], void>({
+            query: () => '/events/types',
+            transformResponse: (response: { types: string[] }) => response.types || [],
         }),
         createEvent: builder.mutation<Event, Partial<Event>>({
             query: (eventData) => ({
@@ -406,6 +426,7 @@ export const {
     useGoogleLoginMutation,
     useOptOutMutation,
     useGetEventsQuery,
+    useGetEventTypesQuery,
     useCreateEventMutation,
     useDeleteEventMutation,
     useUpdateEventMutation,
