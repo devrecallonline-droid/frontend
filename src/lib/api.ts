@@ -16,6 +16,8 @@ export interface Event {
     created_at?: string;
     is_private?: boolean;
     cluster_enabled?: boolean;
+    cover_image_url?: string;
+    has_paid_features?: boolean;
 }
 
 export interface Photo {
@@ -164,6 +166,21 @@ export const apiSlice = createApi({
             }),
             invalidatesTags: ['Event'],
         }),
+        uploadEventCover: builder.mutation<{ status: string; cover_image_url: string }, { eventId: string; file: File }>({
+            query: ({ eventId, file }) => {
+                const formData = new FormData();
+                formData.append('cover', file);
+                return {
+                    url: `events/${eventId}/cover`,
+                    method: 'POST',
+                    body: formData,
+                };
+            },
+            invalidatesTags: (result, error, { eventId }) => [
+                { type: 'Event', id: eventId },
+                { type: 'Event', id: 'LIST' }
+            ],
+        }),
         deleteEvent: builder.mutation<{ status: string; event_id: string }, string>({
             query: (eventId) => ({
                 url: `events/${eventId}`,
@@ -230,26 +247,6 @@ export const apiSlice = createApi({
         getEventPhotos: builder.query<{ photos: Photo[], hasMore: boolean, totalPhotos: number }, { eventId: string; page: number; limit: number }>({
             query: ({ eventId, page, limit }) => `/events/${eventId}/photos?page=${page}&limit=${limit}`,
             providesTags: (result, error, { eventId }) => [{ type: 'Event', id: eventId }],
-            // Group cache entries by eventId so pages merge
-            serializeQueryArgs: ({ queryArgs }) => {
-                return queryArgs.eventId;
-            },
-            // Merge incoming data to the cache entry
-            merge: (currentCache, newItems, { arg }) => {
-                if (arg.page === 1) {
-                    return newItems;
-                }
-                // Deduplicate by photo id
-                const existingIds = new Set(currentCache.photos.map(p => p.id));
-                const uniqueNew = newItems.photos.filter(p => !existingIds.has(p.id));
-                currentCache.photos.push(...uniqueNew);
-                currentCache.hasMore = newItems.hasMore;
-                currentCache.totalPhotos = newItems.totalPhotos;
-            },
-            // Refetch when the page changes
-            forceRefetch({ currentArg, previousArg }) {
-                return currentArg?.page !== previousArg?.page;
-            },
         }),
         getEventDetails: builder.query<Event, string>({
             query: (eventId) => `/events/${eventId}`,
@@ -259,6 +256,17 @@ export const apiSlice = createApi({
             query: ({ eventId, photoId }) => ({
                 url: `/events/${eventId}/photos/${photoId}`,
                 method: 'DELETE',
+            }),
+            invalidatesTags: (result, error, { eventId }) => [
+                { type: 'Event', id: eventId },
+                { type: 'Event', id: 'LIST' }
+            ],
+        }),
+        deletePhotosBulk: builder.mutation<{ status: string; deleted_count: number; photo_ids: string[] }, { eventId: string; photoIds: string[] }>({
+            query: ({ eventId, photoIds }) => ({
+                url: `/events/${eventId}/photos/bulk-delete`,
+                method: 'POST',
+                body: { photoIds },
             }),
             invalidatesTags: (result, error, { eventId }) => [
                 { type: 'Event', id: eventId },
@@ -428,6 +436,7 @@ export const {
     useGetEventsQuery,
     useGetEventTypesQuery,
     useCreateEventMutation,
+    useUploadEventCoverMutation,
     useDeleteEventMutation,
     useUpdateEventMutation,
     useGetStorageUsageQuery,
@@ -437,6 +446,7 @@ export const {
     useSearchPhotosMutation,
     useGetEventPhotosQuery,
     useDeletePhotoMutation,
+    useDeletePhotosBulkMutation,
     useGetEventDetailsQuery,
     // Collection hooks
     useGetCollectionsQuery,

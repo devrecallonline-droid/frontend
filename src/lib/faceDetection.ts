@@ -298,7 +298,7 @@ export const performLivenessCheck = async (
     }) => void
 ): Promise<LivenessResult> => {
     const startTime = Date.now();
-    const duration = 4000; // 4 seconds for liveness check - longer for better accuracy
+    const duration = 10000; // 10 seconds for liveness check - giving users enough time to read and react
     const faceHistory: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }>[] = [];
     const earHistory: number[] = [];
     

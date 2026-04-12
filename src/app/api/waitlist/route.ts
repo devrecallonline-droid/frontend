@@ -17,18 +17,18 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email
     await resend.emails.send({
-      from: `Memzo <${fromEmail}>`,
+      from: `Nenge <${fromEmail}>`,
       to: email,
-      subject: "You're on the Memzo waitlist!",
+      subject: "You're on the Nenge waitlist!",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #ffffff; color: #1a1a1a; line-height: 1.6;">
           <p>Hi there,</p>
           
-          <p>You’re officially on the <strong>Memzo</strong> waitlist—welcome! 🎉</p>
+          <p>You’re officially on the <strong>Nenge</strong> waitlist—welcome! 🎉</p>
           
           <p>Let’s be honest: after a wedding, concert, or big event, thousands of photos get shared… and somehow the best shots of <em>you</em> are always buried somewhere in that endless scroll. Finding them? That’s a whole different job.</p>
           
-          <p>That’s exactly why we’re building <strong>Memzo</strong>.</p>
+          <p>That’s exactly why we’re building <strong>Nenge</strong>.</p>
           
           <p>Think of it as your personal memory assistant—designed to instantly find every photo you’re in, without the hassle.</p>
           
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
           
           <ul style="padding-left: 20px;">
             <li>You join a private event hosted by someone you know and trust</li>
-            <li>You take a quick selfie so Memzo knows who to look for</li>
+            <li>You take a quick selfie so Nenge knows who to look for</li>
             <li>Our system scans the event photos and delivers only the ones you appear in—no endless searching</li>
           </ul>
           
@@ -48,13 +48,13 @@ export async function POST(request: NextRequest) {
             <li><strong>Temporary data only:</strong> Your facial map is securely deleted shortly after the event ends</li>
           </ul>
           
-          <p>We’re building Memzo so you can relive your best moments—without becoming a permanent data point.</p>
+          <p>We’re building Nenge so you can relive your best moments—without becoming a permanent data point.</p>
           
           <p>You’re early, and that means you’ll be among the first to experience it. We’ll be in touch soon with updates and early access 👀</p>
           
           <p>Stay tuned—we can’t wait to help you find your magic.</p>
           
-          <p>Best,<br>The Memzo Team</p>
+          <p>Best,<br>The Nenge Team</p>
           
           <div style="margin-top: 30px; text-align: center;">
             <a href="#" style="display: inline-block; margin: 0 10px; text-decoration: none;">

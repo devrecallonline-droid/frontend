@@ -16,10 +16,12 @@ import {
     CheckCircle2,
     AlertCircle,
     Image as ImageIcon,
-    ArrowLeft,
     Plus,
-    Shield
+    Shield,
+    ArrowRight,
+    ArrowLeft
 } from 'lucide-react';
+import GoogleDrivePicker from '@/components/GoogleDrivePicker';
 
 /**
  * Utility for merging tailwind classes
@@ -40,6 +42,7 @@ const UploadPage = () => {
 
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(0);
     const [mounted, setMounted] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -63,9 +66,39 @@ const UploadPage = () => {
         const imageFiles = files.filter(file => file.type.startsWith('image/'));
         if (imageFiles.length === 0) return;
 
-        setSelectedFiles(prev => [...prev, ...imageFiles]);
-        const newPreviews = imageFiles.map(file => URL.createObjectURL(file));
+        // Filter out duplicates (same name, size, and type)
+        const uniqueSelectedFiles = [...selectedFiles];
+        const duplicates: string[] = [];
+        const newUniqueFiles = imageFiles.filter(file => {
+            const isDuplicate = selectedFiles.some(existing => 
+                existing.name === file.name && 
+                existing.size === file.size && 
+                existing.type === file.type
+            );
+            if (isDuplicate) duplicates.push(file.name);
+            return !isDuplicate;
+        });
+
+        if (newUniqueFiles.length === 0) {
+            if (duplicates.length > 0) {
+                addAlert({ type: 'error', message: 'All selected files are already in your list.' });
+            }
+            return;
+        }
+
+        if (duplicates.length > 0) {
+            addAlert({ 
+                type: 'warning', 
+                message: `Skipped ${duplicates.length} duplicate file${duplicates.length > 1 ? 's' : ''}.` 
+            });
+        }
+
+        setSelectedFiles(prev => [...prev, ...newUniqueFiles]);
+        const newPreviews = newUniqueFiles.map(file => URL.createObjectURL(file));
         setPreviews(prev => [...prev, ...newPreviews]);
+        
+        // Reset to first page when adding new files to show them
+        setCurrentPage(0);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,10 +129,19 @@ const UploadPage = () => {
         }
     };
 
-    const removeFile = (index: number) => {
-        URL.revokeObjectURL(previews[index]);
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-        setPreviews(prev => prev.filter((_, i) => i !== index));
+    const removeFile = (index: number, imagesPerPage: number = 5) => {
+        // Adjust index based on current page
+        const actualIndex = (currentPage * imagesPerPage) + index;
+        URL.revokeObjectURL(previews[actualIndex]);
+        setPreviews(prev => prev.filter((_, i) => i !== actualIndex));
+        setSelectedFiles(prev => prev.filter((_, i) => i !== actualIndex));
+        
+        // If the current page becomes empty, go back
+        const newTotal = previews.length - 1;
+        const maxPage = Math.max(0, Math.ceil(newTotal / imagesPerPage) - 1);
+        if (currentPage > maxPage) {
+            setCurrentPage(maxPage);
+        }
     };
 
     const handleUpload = async () => {
@@ -174,154 +216,231 @@ const UploadPage = () => {
 
             <main className="flex-1 max-w-4xl mx-auto w-full px-6 pt-32 pb-20">
                 {/* Header Section */}
-                <div className="mb-12 lg:mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-8 animate-slide-up">
-                    <div>
+                <div className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8 animate-slide-up">
+                    <div className="space-y-4">
                         <button
-                            onClick={() => router.back()}
-                            className="flex items-center text-titanium/40 hover:text-titanium transition-colors mb-6 group text-[10px] font-bold uppercase tracking-widest"
+                            onClick={() => router.push(`/events/${eventId}`)}
+                            className="flex items-center text-titanium/30 hover:text-titanium transition-all mb-2 group text-[10px] font-black uppercase tracking-[0.2em]"
                         >
-                            <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-                            Back to Gathering
+                            <ArrowLeft className="w-3.5 h-3.5 mr-2 transition-transform group-hover:-translate-x-1" />
+                            Back to Event
                         </button>
-                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-titanium tracking-tighter leading-[0.9]">
-                            Share <span className="opacity-30">Memories.</span>
+                        <h1 className="text-4xl sm:text-6xl md:text-8xl font-black text-titanium tracking-tighter leading-[0.8] uppercase italic">
+                            Share <span className="opacity-20">Memories.</span>
                         </h1>
-                        <p className="mt-6 text-titanium/50 font-medium">
-                            Sharing to <span className="text-titanium font-bold">{event?.title || 'Gathering...'}</span>
+                        <p className="text-sm sm:text-base text-titanium/40 font-bold uppercase tracking-tight">
+                            Sharing to <span className="text-titanium underline decoration-titanium/10 underline-offset-4">{event?.title || 'this gathering...'}</span>
                         </p>
                     </div>
                 </div>
 
-                <Card className="p-1 w-full bg-white/40 glass border-white/60 rounded-apple-2xl overflow-hidden animate-slide-up [animation-delay:100ms]">
-                    <div className="bg-white/20 p-8 md:p-12 rounded-apple-xl">
-                        {selectedFiles.length === 0 ? (
-                            <div
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                                className={cn(
-                                    "text-center py-16 md:py-24 border-2 border-dashed rounded-apple-lg transition-all duration-300 group cursor-pointer relative",
-                                    isDragging
-                                        ? "border-titanium bg-titanium/5 scale-[0.99] shadow-inner"
-                                        : "border-black/5 hover:bg-black/5"
-                                )}
-                            >
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                    onChange={handleFileChange}
-                                />
-                                <div className={cn(
-                                    "w-20 h-20 rounded-apple-lg flex items-center justify-center mx-auto mb-8 transition-all duration-500",
-                                    isDragging ? "bg-titanium/20 scale-110" : "bg-titanium/5 group-hover:scale-110"
-                                )}>
-                                    <Upload className={cn(
-                                        "w-10 h-10 transition-colors",
-                                        isDragging ? "text-titanium opacity-100" : "text-titanium opacity-20"
-                                    )} />
-                                </div>
-                                <h2 className="text-2xl font-black text-titanium mb-4 tracking-tight italic">
-                                    {isDragging ? "Drop to Add" : "Select Photos"}
-                                </h2>
-                                <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto text-sm leading-relaxed px-4">
-                                    {isDragging
-                                        ? "Release your mouse to start the magic."
-                                        : "Choose the best moments to share with everyone in this gathering."}
-                                </p>
-                                <Button variant="default" className={cn(
-                                    "bg-titanium text-ivory pointer-events-none px-12 h-14 transition-all",
+                <div className="w-full animate-slide-up [animation-delay:100ms]">
+                    {selectedFiles.length === 0 ? (
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={cn(
+                                "block text-center py-20 px-10 md:py-32 md:px-20 border border-dashed border-black/10 rounded-[2.5rem] bg-white/40 glass transition-all duration-500 group relative overflow-hidden",
+                                isDragging
+                                    ? "border-titanium/40 bg-titanium/5 scale-[0.98] shadow-inner"
+                                    : "hover:bg-white/60"
+                            )}
+                        >
+                            {/* Decorative elements */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-titanium/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            
+                            <div className={cn(
+                                "w-24 h-24 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 transition-all duration-700 relative z-10",
+                                isDragging ? "bg-titanium text-ivory rotate-12 scale-110" : "bg-titanium/5 text-titanium opacity-20 group-hover:opacity-100 group-hover:bg-titanium/10 group-hover:-rotate-3"
+                            )}>
+                                <Upload className="w-10 h-10" />
+                            </div>
+                            <h2 className="text-3xl font-black text-titanium mb-4 tracking-tighter italic uppercase relative z-10 px-4">
+                                {isDragging ? "Release the Magic" : "Add Memories"}
+                            </h2>
+                            <p className="text-titanium/40 font-bold uppercase tracking-widest text-[10px] mb-12 max-w-xs mx-auto leading-relaxed px-8 relative z-10">
+                                {isDragging
+                                    ? "Drop them here"
+                                    : "Select the most beautiful moments from your camera roll."}
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10 w-full max-w-xs mx-auto">
+                                <label className={cn(
+                                    "flex-1 w-full inline-flex items-center justify-center bg-titanium text-ivory h-16 rounded-full font-bold uppercase tracking-widest text-[10px] shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer",
                                     isDragging && "opacity-0 scale-90"
                                 )}>
-                                    Add Memories
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="space-y-12">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                                    {previews.map((preview, index) => (
-                                        <div key={index} className="relative aspect-square group rounded-apple-lg overflow-hidden glass border-white/60 p-1 premium-shadow-sm">
-                                            <img
-                                                src={preview}
-                                                alt="Preview"
-                                                className="w-full h-full object-cover rounded-apple-md"
-                                            />
-                                            <button
-                                                onClick={() => removeFile(index)}
-                                                className="absolute top-2 right-2 p-2 bg-black/80 backdrop-blur-md text-white rounded-full sm:opacity-0 group-hover:opacity-100 transition-all hover:bg-black shadow-lg"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <label className="aspect-square border-2 border-dashed border-black/5 rounded-apple-lg flex flex-col items-center justify-center cursor-pointer hover:bg-black/5 transition-all text-titanium/20 hover:text-titanium/40">
-                                        <Plus className="w-8 h-8 sm:w-10 sm:h-10" />
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                        />
-                                    </label>
-                                </div>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
+                                    From Device
+                                </label>
 
-                                <div className="p-6 md:p-8 bg-black text-ivory rounded-apple-xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
-                                    <div className="flex items-center text-center md:text-left flex-col md:flex-row">
-                                        <div className="w-14 h-14 bg-ivory/10 rounded-apple-md flex items-center justify-center mb-4 md:mb-0 md:mr-6">
-                                            <ImageIcon className="w-7 h-7 text-ivory/40" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xl font-black tracking-tight">{selectedFiles.length} Photos Selected</p>
-                                            <p className="text-sm font-medium text-ivory/40">Almost ready to share.</p>
+                                {/* TEMPORARILY DISABLED PENDING GOOGLE VERIFICATION
+                                <GoogleDrivePicker 
+                                    onFilesSelected={processFiles}
+                                    className={cn(
+                                        "flex-1 w-full bg-white/80 border border-black/10 text-titanium h-16 rounded-full shadow-sm hover:bg-white",
+                                        isDragging && "opacity-0 scale-90"
+                                    )}
+                                />
+                                */}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-8 animate-slide-up">
+                            {/* Action Bar Moved to Top */}
+                            <div className="p-1 bg-black rounded-[2.5rem] shadow-2xl shadow-black/20 overflow-hidden relative group">
+                                {/* Progress Background */}
+                                {isUploading && (
+                                    <div 
+                                        className="absolute inset-0 bg-titanium/20 transition-all duration-500 origin-left"
+                                        style={{ width: `${progress.percentage}%` }}
+                                    />
+                                )}
+                                
+                                <div className="relative z-10 p-3 sm:p-4 flex items-center justify-between gap-4">
+                                    <div className="flex items-center pl-4 sm:pl-6">
+                                        <div className="flex-1">
+                                            <p className="text-xl sm:text-2xl font-black tracking-tighter text-ivory uppercase italic leading-none">
+                                                {isUploading ? `Sending...` : `${selectedFiles.length} Selected`}
+                                            </p>
+                                            <p className="text-[9px] font-black text-ivory/40 uppercase tracking-[0.2em] mt-1 hidden sm:block">
+                                                {isUploading ? `${progress.percentage}% COMPLETE` : 'Ready to share'}
+                                            </p>
                                         </div>
                                     </div>
+                                    
                                     <Button
                                         onClick={handleUpload}
                                         disabled={isUploading}
-                                        className="w-full md:w-auto px-12 h-16 md:h-20 bg-ivory text-black hover:bg-white text-lg"
+                                        className="px-8 sm:px-12 h-14 sm:h-16 bg-ivory text-black hover:bg-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                                     >
                                         {isUploading ? (
-                                            <div className="flex items-center">
-                                                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                                                <span>Uploading {progress.current}/{progress.total}...</span>
-                                            </div>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
-                                            <>
-                                                <Upload className="w-5 h-5 mr-3" />
-                                                <span>Upload Now</span>
-                                            </>
+                                            <div className="flex items-center">
+                                                <Upload className="w-4 h-4 mr-2" />
+                                                Share
+                                            </div>
                                         )}
                                     </Button>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </Card>
+
+                            {(() => {
+                                const IMAGES_PER_PAGE = 5;
+                                const totalPages = Math.ceil(previews.length / IMAGES_PER_PAGE);
+                                const pageImages = previews.slice(currentPage * IMAGES_PER_PAGE, (currentPage + 1) * IMAGES_PER_PAGE);
+                                
+                                return (
+                                    <>
+                                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                                            {pageImages.map((preview, index) => (
+                                                <div key={index} className="relative aspect-square group rounded-[1rem] overflow-hidden bg-white/40 glass border-white/60 p-1 shadow-xl transition-all hover:scale-[1.02]">
+                                                    <img
+                                                        src={preview}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover rounded-[0.8rem]"
+                                                    />
+                                                    <button
+                                                        onClick={() => removeFile(index, IMAGES_PER_PAGE)}
+                                                        className="absolute top-2 right-2 p-1.5 bg-black/80 backdrop-blur-xl text-white rounded-full opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all hover:bg-black hover:scale-110 shadow-lg z-10"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            
+                                            {/* Always show 'Add More' on every page slide */}
+                                            <label className="aspect-square border border-dashed border-black/5 rounded-[1rem] flex flex-col items-center justify-center cursor-pointer hover:bg-black/5 transition-all text-titanium/10 hover:text-titanium/30 group">
+                                                <Plus className="w-6 h-6 transition-transform group-hover:scale-110 group-hover:rotate-90" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest mt-1.5 hidden sm:block">Add More</span>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleFileChange}
+                                                />
+                                            </label>
+                                        </div>
+
+                                        {/* Pagination Controls */}
+                                        {totalPages > 1 && (
+                                            <div className="flex items-center justify-center gap-6 py-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                                                    disabled={currentPage === 0}
+                                                    className="w-12 h-12 rounded-full border border-black/5 hover:bg-white transition-all disabled:opacity-20"
+                                                >
+                                                    <ArrowLeft className="w-5 h-5" />
+                                                </Button>
+                                                
+                                                <div className="flex items-center gap-2">
+                                                    {Array.from({ length: totalPages }).map((_, i) => (
+                                                        <div 
+                                                            key={i}
+                                                            className={cn(
+                                                                "h-1.5 rounded-full transition-all duration-500",
+                                                                currentPage === i ? "w-8 bg-titanium" : "w-1.5 bg-titanium/10"
+                                                            )}
+                                                        />
+                                                    ))}
+                                                </div>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                                                    disabled={currentPage >= totalPages - 1}
+                                                    className="w-12 h-12 rounded-full border border-black/5 hover:bg-white transition-all disabled:opacity-20"
+                                                >
+                                                    <ArrowRight className="w-5 h-5" />
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    )}
+                </div>
 
                 {/* Security Protocols */}
-                <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-black/5 pt-20">
-                    <div className="space-y-4">
-                        <div className="w-10 h-10 bg-titanium/5 rounded-apple-lg flex items-center justify-center text-titanium/60">
-                            <Shield className="w-5 h-5" />
+                <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 border-t border-black/5 pt-20">
+                    <div className="space-y-6 group">
+                        <div className="w-12 h-12 bg-titanium/5 rounded-[1rem] flex items-center justify-center text-titanium/20 group-hover:bg-titanium group-hover:text-ivory transition-all duration-500 group-hover:-rotate-6">
+                            <Shield className="w-6 h-6" />
                         </div>
-                        <h4 className="text-sm font-black text-titanium uppercase tracking-widest italic">Secure Sharing</h4>
-                        <p className="text-sm text-titanium/40 font-medium leading-relaxed">End-to-end encryption ensures your memories stay private and safe.</p>
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-black text-titanium uppercase tracking-[0.2em] italic">Secure Sharing</h4>
+                            <p className="text-sm text-titanium/40 font-bold leading-relaxed uppercase tracking-tight">End-to-end encryption ensures your memories stay private and safe.</p>
+                        </div>
                     </div>
-                    <div className="space-y-4">
-                        <div className="w-10 h-10 bg-titanium/5 rounded-apple-lg flex items-center justify-center text-titanium/60">
-                            <Camera className="w-5 h-5" />
+                    <div className="space-y-6 group">
+                        <div className="w-12 h-12 bg-titanium/5 rounded-[1rem] flex items-center justify-center text-titanium/20 group-hover:bg-titanium group-hover:text-ivory transition-all duration-500 group-hover:rotate-6">
+                            <Camera className="w-6 h-6" />
                         </div>
-                        <h4 className="text-sm font-black text-titanium uppercase tracking-widest italic">Privacy First</h4>
-                        <p className="text-sm text-titanium/40 font-medium leading-relaxed">We use AI to help you find your photos without ever compromising your identity.</p>
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-black text-titanium uppercase tracking-[0.2em] italic">Privacy First</h4>
+                            <p className="text-sm text-titanium/40 font-bold leading-relaxed uppercase tracking-tight">AI scanning for identities happens locally before cloud processing.</p>
+                        </div>
                     </div>
-                    <div className="space-y-4">
-                        <div className="w-10 h-10 bg-titanium/5 rounded-apple-lg flex items-center justify-center text-titanium/60">
-                            <AlertCircle className="w-5 h-5" />
+                    <div className="space-y-6 group">
+                        <div className="w-12 h-12 bg-titanium/5 rounded-[1rem] flex items-center justify-center text-titanium/20 group-hover:bg-titanium group-hover:text-ivory transition-all duration-500 group-hover:-rotate-3">
+                            <AlertCircle className="w-6 h-6" />
                         </div>
-                        <h4 className="text-sm font-black text-titanium uppercase tracking-widest italic">7-Day Gallery</h4>
-                        <p className="text-sm text-titanium/40 font-medium leading-relaxed">To keep things light and private, photos are automatically cleared after 7 days.</p>
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-black text-titanium uppercase tracking-[0.2em] italic">7-Day Gallery</h4>
+                            <p className="text-sm text-titanium/40 font-bold leading-relaxed uppercase tracking-tight">To protect privacy, ephemeral galleries are cleared after 7 days.</p>
+                        </div>
                     </div>
                 </div>
             </main>

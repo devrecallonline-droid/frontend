@@ -29,12 +29,16 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
+import { PostHogProvider } from './PostHogProvider';
+
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-            <Provider store={store}>
-                <AuthInitializer>{children}</AuthInitializer>
-            </Provider>
-        </GoogleOAuthProvider>
+        <PostHogProvider>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <Provider store={store}>
+                    <AuthInitializer>{children}</AuthInitializer>
+                </Provider>
+            </GoogleOAuthProvider>
+        </PostHogProvider>
     );
 }

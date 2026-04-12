@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Textarea, Modal, Badge } from './ui';
-import { Calendar, MapPin, X, Sparkles, Loader2, Link as LinkIcon, Check, ListFilter } from 'lucide-react';
-import { useCreateEventMutation, useGetEventTypesQuery } from '@/lib/api';
+import { Calendar, MapPin, X, Sparkles, Loader2, Link as LinkIcon, Check, ListFilter, Camera } from 'lucide-react';
+import { useCreateEventMutation, useGetEventTypesQuery, useUploadEventCoverMutation } from '@/lib/api';
 
 interface CreateEventModalProps {
     isOpen: boolean;
@@ -15,9 +15,13 @@ interface CreateEventModalProps {
 export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModalProps) => {
     const router = useRouter();
     const [createEvent, { isLoading }] = useCreateEventMutation();
+    const [uploadEventCover, { isLoading: isUploadingCover }] = useUploadEventCoverMutation();
     const { data: eventTypes = [], isLoading: isLoadingTypes } = useGetEventTypesQuery();
     const [step, setStep] = useState<'form' | 'success'>('form');
     const [createdEvent, setCreatedEvent] = useState<any>(null);
+    const [coverImage, setCoverImage] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -26,6 +30,14 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
         event_date: ''
     });
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCoverImage(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -33,6 +45,14 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
                 ...formData,
                 event_date: formData.event_date ? new Date(formData.event_date).toISOString() : new Date().toISOString()
             }).unwrap();
+
+            if (coverImage) {
+                try {
+                    await uploadEventCover({ eventId: result.id, file: coverImage }).unwrap();
+                } catch (imgErr) {
+                    console.error("Failed to upload cover:", imgErr);
+                }
+            }
 
             setCreatedEvent(result);
             setStep('success');
@@ -59,6 +79,8 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
     const resetAndClose = () => {
         setStep('form');
         setFormData({ title: '', description: '', event_type: '', location: '', event_date: '' });
+        setCoverImage(null);
+        setPreviewUrl(null);
         onClose();
         if (step === 'success') {
             onSuccess();
@@ -77,12 +99,40 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
 
                 {step === 'form' ? (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="mb-10 text-center">
-                            <div className="inline-flex h-16 w-16 bg-titanium rounded-apple-lg items-center justify-center text-white mb-6 premium-shadow">
-                                <Sparkles className="w-8 h-8" />
+                        <div className="mb-8 text-center relative">
+                            {/* Stylized Thumbnail Uploader */}
+                            <div 
+                                className="relative w-full h-40 sm:h-48 mb-6 rounded-3xl overflow-hidden group cursor-pointer bg-titanium/[0.02] border-2 border-dashed border-titanium/10 hover:border-titanium/30 transition-all flex flex-col items-center justify-center animate-in zoom-in-95 duration-500"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {previewUrl ? (
+                                    <>
+                                        <img src={previewUrl} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm">
+                                            <Camera className="w-8 h-8 text-white mb-2" />
+                                            <span className="text-white font-medium text-sm">Change Cover</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="h-14 w-14 bg-titanium/5 rounded-full flex items-center justify-center mb-3 text-titanium/40 group-hover:scale-110 transition-transform duration-300">
+                                            <Camera className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-sm font-semibold text-titanium/80">Add a cover photo</p>
+                                        <p className="text-[10px] text-titanium/40 mt-1 uppercase tracking-wider font-bold">High resolution recommended</p>
+                                    </>
+                                )}
+                                <input 
+                                    ref={fileInputRef} 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    onChange={handleImageChange} 
+                                />
                             </div>
+
                             <h2 className="text-3xl font-black text-titanium mb-2 tracking-tighter">New Gathering</h2>
-                            <p className="text-titanium/40 font-medium">Create a private space for your event's memories.</p>
+                            <p className="text-titanium/40 font-medium">Create a private space for your memories.</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
@@ -150,8 +200,8 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full h-14" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Host Gathering'}
+                            <Button type="submit" className="w-full h-14" disabled={isLoading || isUploadingCover}>
+                                {isLoading || isUploadingCover ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Host Gathering'}
                             </Button>
                         </form>
                     </div>
