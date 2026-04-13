@@ -38,6 +38,59 @@ import {
     EyeOff,
     Camera
 } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+        const image = new Image();
+        image.addEventListener('load', () => resolve(image));
+        image.addEventListener('error', (error) => reject(error));
+        image.setAttribute('crossOrigin', 'anonymous');
+        image.src = url;
+    });
+
+const getCroppedImg = async (
+    imageSrc: string,
+    pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        throw new Error('No 2d context');
+    }
+
+    // Preserve original resolution of the crop - no downscaling
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                reject(new Error('Canvas is empty'));
+                return;
+            }
+            resolve(blob);
+        }, 'image/jpeg', 0.98);
+    });
+};
 
 // Memoized photo grid item - prevents re-renders and keeps image loaded
 const PhotoGridItem = React.memo(({
@@ -223,6 +276,13 @@ const EventDetailPage = () => {
     const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
     const editFileInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Edit cover cropping state
+    const [isEditCropping, setIsEditCropping] = useState(false);
+    const [editCrop, setEditCrop] = useState({ x: 0, y: 0 });
+    const [editZoom, setEditZoom] = useState(1);
+    const [editCroppedAreaPixels, setEditCroppedAreaPixels] = useState<any>(null);
+    const [originalCoverUrl, setOriginalCoverUrl] = useState<string | null>(null);
     const { addAlert } = useUI();
     const [createShareLink] = useCreateShareLinkMutation();
     const { data: shareLinksData, refetch: refetchShareLinks } = useGetShareLinksQuery(eventId, { skip: !eventId || !event || !isOwner });
@@ -997,6 +1057,10 @@ const EventDetailPage = () => {
                                                 });
                                                 setEditCoverImage(null);
                                                 setEditPreviewUrl(event.cover_image_url || null);
+                                                setOriginalCoverUrl(event.cover_image_url || null);
+                                                setIsEditCropping(false);
+                                                setEditCrop({ x: 0, y: 0 });
+                                                setEditZoom(1);
                                                 setShowEditModal(true);
                                             }}
                                             className="ml-auto p-2 rounded-full bg-titanium/5 hover:bg-titanium/10 text-titanium transition-colors"
@@ -1543,7 +1607,12 @@ const EventDetailPage = () => {
             {/* Edit Event Modal */}
             <Modal
                 isOpen={showEditModal}
-                onClose={() => setShowEditModal(false)}
+                onClose={() => {
+                    setShowEditModal(false);
+                    setIsEditCropping(false);
+                    setEditCrop({ x: 0, y: 0 });
+                    setEditZoom(1);
+                }}
                 title="Event Settings"
             >
                 <form
@@ -1578,15 +1647,105 @@ const EventDetailPage = () => {
                 >
                     <div className="mb-6 relative">
                         <div
-                            className="relative w-full h-40 sm:h-48 rounded-2xl overflow-hidden group cursor-pointer bg-titanium/[0.02] border-2 border-dashed border-titanium/10 hover:border-titanium/30 transition-all flex flex-col items-center justify-center animate-in zoom-in-95 duration-500"
-                            onClick={() => editFileInputRef.current?.click()}
+                            className="relative w-full aspect-video rounded-2xl overflow-hidden group bg-titanium/[0.02] border-2 border-dashed border-titanium/10 hover:border-titanium/30 transition-all flex flex-col items-center justify-center animate-in zoom-in-95 duration-500"
+                            onClick={() => !isEditCropping && !editPreviewUrl && editFileInputRef.current?.click()}
                         >
-                            {editPreviewUrl ? (
+                            {isEditCropping && editPreviewUrl ? (
+                                <>
+                                    <div className="absolute inset-0 cursor-move">
+                                        <Cropper
+                                            image={editPreviewUrl}
+                                            crop={editCrop}
+                                            zoom={editZoom}
+                                            aspect={16 / 9}
+                                            minZoom={0.3}
+                                            maxZoom={3}
+                                            onCropChange={setEditCrop}
+                                            onCropComplete={(_, areaPixels) => setEditCroppedAreaPixels(areaPixels)}
+                                            onZoomChange={setEditZoom}
+                                            showGrid={false}
+                                            style={{
+                                                containerStyle: { borderRadius: '16px' }
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2">
+                                        <input
+                                            type="range"
+                                            min={0.3}
+                                            max={3}
+                                            step={0.1}
+                                            value={editZoom}
+                                            onChange={(e) => setEditZoom(Number(e.target.value))}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex-1 h-1 bg-white/40 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!editPreviewUrl || !editCroppedAreaPixels) return;
+                                                try {
+                                                    const croppedBlob = await getCroppedImg(editPreviewUrl, editCroppedAreaPixels);
+                                                    const croppedFile = new File([croppedBlob], editCoverImage?.name || 'cover.jpg', { type: 'image/jpeg' });
+                                                    setEditCoverImage(croppedFile);
+                                                    setEditPreviewUrl(URL.createObjectURL(croppedBlob));
+                                                    setIsEditCropping(false);
+                                                } catch (err) {
+                                                    console.error('Crop failed:', err);
+                                                    addAlert({ type: 'error', message: 'Failed to crop image' });
+                                                }
+                                            }}
+                                            className="px-3 py-1.5 bg-white text-titanium text-xs font-bold rounded-full shadow-sm hover:bg-white/90 transition-colors"
+                                        >
+                                            Apply
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsEditCropping(false);
+                                                setEditCoverImage(null);
+                                                setEditPreviewUrl(originalCoverUrl);
+                                                setEditCrop({ x: 0, y: 0 });
+                                                setEditZoom(1);
+                                                if (editFileInputRef.current) {
+                                                    editFileInputRef.current.value = '';
+                                                }
+                                            }}
+                                            className="px-3 py-1.5 bg-black/50 text-white text-xs font-bold rounded-full backdrop-blur-sm hover:bg-black/60 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </>
+                            ) : editPreviewUrl ? (
                                 <>
                                     <img src={editPreviewUrl} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm">
-                                        <Camera className="w-8 h-8 text-white mb-2" />
-                                        <span className="text-white font-medium text-sm">Change Cover</span>
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsEditCropping(true);
+                                                setEditCrop({ x: 0, y: 0 });
+                                                setEditZoom(1);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-white text-titanium text-sm font-bold rounded-full shadow-sm hover:bg-white/90 transition-colors"
+                                        >
+                                            <Camera className="w-4 h-4" />
+                                            Edit Cover
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                editFileInputRef.current?.click();
+                                            }}
+                                            className="text-white font-medium text-sm hover:underline"
+                                        >
+                                            Change Cover
+                                        </button>
                                     </div>
                                 </>
                             ) : (
@@ -1608,6 +1767,9 @@ const EventDetailPage = () => {
                                     if (file) {
                                         setEditCoverImage(file);
                                         setEditPreviewUrl(URL.createObjectURL(file));
+                                        setIsEditCropping(true);
+                                        setEditCrop({ x: 0, y: 0 });
+                                        setEditZoom(1);
                                     }
                                 }}
                             />
@@ -1678,7 +1840,7 @@ const EventDetailPage = () => {
                         </button>
                     </div>
 
-                    {/* Paid Features Toggle */}
+                    {/* Paid Features Toggle - Commented out temporarily
                     <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl">
                         <div>
                             <p className="text-sm font-bold text-amber-900">Premium Layout</p>
@@ -1696,6 +1858,7 @@ const EventDetailPage = () => {
                             />
                         </button>
                     </div>
+                    */}
 
                     <div className="flex gap-3 pt-4">
                         <Button

@@ -1,10 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Textarea, Modal, Badge } from './ui';
+import { Button, Input, Textarea, Modal } from './ui';
 import { Calendar, MapPin, X, Sparkles, Loader2, Link as LinkIcon, Check, ListFilter, Camera } from 'lucide-react';
 import { useCreateEventMutation, useGetEventTypesQuery, useUploadEventCoverMutation } from '@/lib/api';
+import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+        const image = new Image();
+        image.addEventListener('load', () => resolve(image));
+        image.addEventListener('error', (error) => reject(error));
+        image.setAttribute('crossOrigin', 'anonymous');
+        image.src = url;
+    });
+
+const getCroppedImg = async (
+    imageSrc: string,
+    pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        throw new Error('No 2d context');
+    }
+
+    // Preserve original resolution of the crop - no downscaling
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                reject(new Error('Canvas is empty'));
+                return;
+            }
+            resolve(blob);
+        }, 'image/jpeg', 0.98);
+    });
+};
 
 interface CreateEventModalProps {
     isOpen: boolean;
@@ -21,7 +74,7 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
     const [createdEvent, setCreatedEvent] = useState<any>(null);
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -30,11 +83,50 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
         event_date: ''
     });
 
+    // Cropper state
+    const [isCropping, setIsCropping] = useState(false);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setCoverImage(file);
-            setPreviewUrl(URL.createObjectURL(file));
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+            setIsCropping(true);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+        }
+    };
+
+    const handleCropComplete = useCallback((_: any, areaPixels: any) => {
+        setCroppedAreaPixels(areaPixels);
+    }, []);
+
+    const handleCropConfirm = async () => {
+        if (!previewUrl || !croppedAreaPixels) return;
+        try {
+            const croppedBlob = await getCroppedImg(previewUrl, croppedAreaPixels);
+            const croppedFile = new File([croppedBlob], coverImage?.name || 'cover.jpg', { type: 'image/jpeg' });
+            setCoverImage(croppedFile);
+            setPreviewUrl(URL.createObjectURL(croppedBlob));
+            setIsCropping(false);
+        } catch (err) {
+            console.error('Crop failed:', err);
+            alert('Failed to crop image. Please try again.');
+        }
+    };
+
+    const handleCropCancel = () => {
+        setIsCropping(false);
+        setCoverImage(null);
+        setPreviewUrl(null);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -81,6 +173,9 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
         setFormData({ title: '', description: '', event_type: '', location: '', event_date: '' });
         setCoverImage(null);
         setPreviewUrl(null);
+        setIsCropping(false);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
         onClose();
         if (step === 'success') {
             onSuccess();
@@ -101,14 +196,60 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="mb-8 text-center relative">
                             {/* Stylized Thumbnail Uploader */}
-                            <div 
-                                className="relative w-full h-40 sm:h-48 mb-6 rounded-3xl overflow-hidden group cursor-pointer bg-titanium/[0.02] border-2 border-dashed border-titanium/10 hover:border-titanium/30 transition-all flex flex-col items-center justify-center animate-in zoom-in-95 duration-500"
-                                onClick={() => fileInputRef.current?.click()}
+                            <div
+                                className="relative w-full aspect-video mb-6 rounded-3xl overflow-hidden group bg-titanium/[0.02] border-2 border-dashed border-titanium/10 hover:border-titanium/30 transition-all flex flex-col items-center justify-center animate-in zoom-in-95 duration-500"
+                                onClick={() => !isCropping && fileInputRef.current?.click()}
                             >
-                                {previewUrl ? (
+                                {isCropping && previewUrl ? (
+                                    <>
+                                        <div className="absolute inset-0 cursor-move">
+                                            <Cropper
+                                                image={previewUrl}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={16 / 9}
+                                                minZoom={0.3}
+                                                maxZoom={3}
+                                                onCropChange={setCrop}
+                                                onCropComplete={handleCropComplete}
+                                                onZoomChange={setZoom}
+                                                showGrid={false}
+                                                style={{
+                                                    containerStyle: { borderRadius: '24px' }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2">
+                                            <input
+                                                type="range"
+                                                min={0.3}
+                                                max={3}
+                                                step={0.1}
+                                                value={zoom}
+                                                onChange={(e) => setZoom(Number(e.target.value))}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex-1 h-1 bg-white/40 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleCropConfirm(); }}
+                                                className="px-3 py-1.5 bg-white text-titanium text-xs font-bold rounded-full shadow-sm hover:bg-white/90 transition-colors"
+                                            >
+                                                Apply
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleCropCancel(); }}
+                                                className="px-3 py-1.5 bg-black/50 text-white text-xs font-bold rounded-full backdrop-blur-sm hover:bg-black/60 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : previewUrl ? (
                                     <>
                                         <img src={previewUrl} alt="Cover Preview" className="absolute inset-0 w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm">
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm cursor-pointer">
                                             <Camera className="w-8 h-8 text-white mb-2" />
                                             <span className="text-white font-medium text-sm">Change Cover</span>
                                         </div>
@@ -122,12 +263,12 @@ export const CreateEventModal = ({ isOpen, onClose, onSuccess }: CreateEventModa
                                         <p className="text-[10px] text-titanium/40 mt-1 uppercase tracking-wider font-bold">High resolution recommended</p>
                                     </>
                                 )}
-                                <input 
-                                    ref={fileInputRef} 
-                                    type="file" 
-                                    accept="image/*" 
-                                    className="hidden" 
-                                    onChange={handleImageChange} 
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleImageChange}
                                 />
                             </div>
 
