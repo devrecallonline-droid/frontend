@@ -29,12 +29,22 @@ export async function generateMetadata(
         if (eventMeta && eventMeta.title) {
              const title = eventMeta.title;
              const desc = eventMeta.description ? `${eventMeta.description} - Find your event photos instantly.` : 'Find your event photos instantly on Nenge.';
-             const images = eventMeta.cover_image_url ? [eventMeta.cover_image_url] : [];
+             
+             // Ensure cover image URL is absolute for OG crawlers
+             let coverImageUrl = eventMeta.cover_image_url || '';
+             if (coverImageUrl && !coverImageUrl.startsWith('http')) {
+                 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+                 const baseOrigin = new URL(apiBase).origin;
+                 coverImageUrl = `${baseOrigin}${coverImageUrl.startsWith('/') ? '' : '/'}${coverImageUrl}`;
+             }
+             
+             const images = coverImageUrl ? [coverImageUrl] : [];
              const fullTitle = `Nenge - ${ownerUsername} invites you to join - ${title}`;
 
              return {
                  title: fullTitle,
                  description: desc,
+                 metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng'),
                  openGraph: {
                      title: fullTitle,
                      description: desc,

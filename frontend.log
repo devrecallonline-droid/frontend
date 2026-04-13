@@ -56,3 +56,5 @@
  GET /events 200 in 47ms (compile: 12ms, render: 35ms)
  GET /admin/dashboard 200 in 232ms (compile: 195ms, render: 38ms)
  GET /events/69d46085957f979c819b9ed8 200 in 858ms (compile: 24ms, render: 834ms)
+ GET /admin 200 in 61ms (compile: 31ms, render: 30ms)
+✓ Compiled in 154ms
