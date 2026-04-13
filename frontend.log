@@ -58,3 +58,4 @@
  GET /events/69d46085957f979c819b9ed8 200 in 858ms (compile: 24ms, render: 834ms)
  GET /admin 200 in 61ms (compile: 31ms, render: 30ms)
 ✓ Compiled in 154ms
+✓ Compiled in 77ms

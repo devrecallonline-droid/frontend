@@ -31,12 +31,9 @@ export async function generateMetadata(
              const desc = eventMeta.description ? `${eventMeta.description} - Find your event photos instantly.` : 'Find your event photos instantly on Nenge.';
              
              // Ensure cover image URL is absolute for OG crawlers
-             let coverImageUrl = eventMeta.cover_image_url || '';
-             if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-                 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-                 const baseOrigin = new URL(apiBase).origin;
-                 coverImageUrl = `${baseOrigin}${coverImageUrl.startsWith('/') ? '' : '/'}${coverImageUrl}`;
-             }
+             // We use our Next.js API redirect route to avoid crawler issues with presigned URL params
+             const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng';
+             const coverImageUrl = eventMeta.cover_image_url ? `${baseUrl}/api/events/${id}/cover` : null;
              
              const images = coverImageUrl ? [coverImageUrl] : [];
              const fullTitle = `Nenge - ${ownerUsername} invites you to join - ${title}`;
