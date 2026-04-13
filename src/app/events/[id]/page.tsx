@@ -750,8 +750,8 @@ const EventDetailPage = () => {
             return (
                 <>
                     {/* Access Banner - shows for all users without access */}
-                    <div className="fixed top-16 left-0 right-0 z-40 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
-                        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg pb-6 sm:pb-0">
+                        <div className="max-w-6xl mx-auto px-4 py-3 pb-6 sm:py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg font-bold">
                                     {eventOwnerFromError?.username?.charAt(0).toUpperCase()}
@@ -763,19 +763,24 @@ const EventDetailPage = () => {
                                     </p>
                                 </div>
                             </div>
-                            {isAuthenticated ? (
-                                <Button
-                                    onClick={handleRequestAccess}
-                                    className="bg-white text-indigo-600 hover:bg-white/90 px-6 py-2 h-auto text-sm font-bold rounded-full whitespace-nowrap"
-                                >
-                                    Request Access
-                                </Button>
-                            ) : (
+                            {!isAuthenticated ? (
                                 <Button
                                     onClick={() => router.push(`/auth?returnUrl=/events/${eventId}`)}
                                     className="bg-white text-indigo-600 hover:bg-white/90 px-6 py-2 h-auto text-sm font-bold rounded-full whitespace-nowrap"
                                 >
                                     Accept Invitation
+                                </Button>
+                            ) : accessStatusFromError?.status === 'pending' ? (
+                                <div className="flex items-center gap-2 px-6 py-2 bg-white/20 rounded-full">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm font-bold whitespace-nowrap">Request Pending</span>
+                                </div>
+                            ) : (
+                                <Button
+                                    onClick={handleRequestAccess}
+                                    className="bg-white text-indigo-600 hover:bg-white/90 px-6 py-2 h-auto text-sm font-bold rounded-full whitespace-nowrap"
+                                >
+                                    Request Access
                                 </Button>
                             )}
                         </div>
@@ -785,7 +790,7 @@ const EventDetailPage = () => {
                         event={limitedEvent}
                         isOwner={false}
                         isAuthenticated={isAuthenticated}
-                        accessStatus='none'
+                        accessStatus={accessStatusFromError?.status === 'pending' ? 'pending' : 'none'}
                         photos={[]} // No photos for guests without access
                         onSearch={() => {
                             if (!isAuthenticated) {

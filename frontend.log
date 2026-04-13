@@ -15,47 +15,42 @@
 - Environments: .env.local
 
 ✓ Starting...
-✓ Ready in 1603ms
-○ Compiling /events/[id] ...
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 9.4s (compile: 7.5s, render: 1835ms)
- GET /admin/events 200 in 501ms (compile: 321ms, render: 180ms)
- GET / 200 in 175ms (compile: 59ms, render: 116ms)
- GET /events 200 in 104ms (compile: 46ms, render: 58ms)
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 849ms (compile: 22ms, render: 828ms)
-✓ Compiled in 1446ms
-✓ Compiled in 443ms
-✓ Compiled in 624ms
-✓ Compiled in 721ms
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 964ms (compile: 39ms, render: 926ms)
- GET /events 200 in 284ms (compile: 156ms, render: 128ms)
-✓ Compiled in 1824ms
-✓ Compiled in 948ms
-✓ Compiled in 989ms
-✓ Compiled in 801ms
-✓ Compiled in 901ms
-✓ Compiled in 1020ms
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 1470ms (compile: 164ms, render: 1306ms)
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 1816ms (compile: 14ms, render: 1802ms)
-✓ Compiled in 1566ms
-✓ Compiled in 393ms
-✓ Compiled in 640ms
-✓ Compiled in 649ms
-✓ Compiled in 788ms
-✓ Compiled in 888ms
-⚠ Fast Refresh had to perform a full reload due to a runtime error.
- GET /events/69d37dc10575c0ad1ecf4a97 200 in 1676ms (compile: 254ms, render: 1422ms)
-✓ Compiled in 688ms
- GET /events 200 in 245ms (compile: 149ms, render: 96ms)
- GET /events/69d46085957f979c819b9ed8 200 in 1031ms (compile: 144ms, render: 887ms)
- GET /events 200 in 33ms (compile: 6ms, render: 27ms)
- GET /events/69d1d9fed534fe6e51e7876a 200 in 1001ms (compile: 10ms, render: 992ms)
- GET /events 200 in 27ms (compile: 3ms, render: 24ms)
- GET /events/69d1d9fed534fe6e51e7876a 200 in 809ms (compile: 16ms, render: 793ms)
-✓ Compiled in 1250ms
- GET /events/69d1d9fed534fe6e51e7876a 200 in 1442ms (compile: 145ms, render: 1297ms)
- GET /events 200 in 47ms (compile: 12ms, render: 35ms)
- GET /admin/dashboard 200 in 232ms (compile: 195ms, render: 38ms)
- GET /events/69d46085957f979c819b9ed8 200 in 858ms (compile: 24ms, render: 834ms)
- GET /admin 200 in 61ms (compile: 31ms, render: 30ms)
-✓ Compiled in 154ms
-✓ Compiled in 77ms
+✓ Ready in 4.5s
+○ Compiling / ...
+ GET / 200 in 6.4s (compile: 5.9s, render: 491ms)
+ GET /events 200 in 125ms (compile: 31ms, render: 94ms)
+ GET /events/69d0c01d2998b24174c372a1 200 in 2.7s (compile: 1851ms, render: 868ms)
+ GET /events/69d0c01d2998b24174c372a1 200 in 1105ms (compile: 14ms, render: 1091ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 913ms (compile: 20ms, render: 893ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 876ms (compile: 11ms, render: 865ms)
+✓ Compiled in 1349ms
+✓ Compiled in 1414ms
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 1376ms (compile: 175ms, render: 1201ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 856ms (compile: 11ms, render: 845ms)
+Failed to fetch event metadata for SEO ReferenceError: fullTitle is not defined
+    at Module.generateMetadata (src/app/events/[id]/layout.tsx:43:25)
+  41 |
+  42 |              return {
+> 43 |                  title: fullTitle,
+     |                         ^
+  44 |                  description: desc,
+  45 |                  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng'),
+  46 |                  openGraph: {
+Failed to fetch event metadata for SEO ReferenceError: fullTitle is not defined
+    at Module.generateMetadata (src/app/events/[id]/layout.tsx:43:25)
+  41 |
+  42 |              return {
+> 43 |                  title: fullTitle,
+     |                         ^
+  44 |                  description: desc,
+  45 |                  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng'),
+  46 |                  openGraph: {
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 1536ms (compile: 232ms, render: 1303ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 1536ms (compile: 366ms, render: 1170ms)
+✓ Compiled in 95ms
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 95ms (compile: 42ms, render: 53ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 1640ms (compile: 248ms, render: 1392ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 955ms (compile: 17ms, render: 938ms)
+ HEAD /events/69dc7b59c6a6ec2e739dd940 200 in 72ms (compile: 15ms, render: 56ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 824ms (compile: 10ms, render: 815ms)
+ HEAD /api/events/69dc7b59c6a6ec2e739dd940/cover 200 in 4.7s (compile: 1743ms, render: 2.9s)

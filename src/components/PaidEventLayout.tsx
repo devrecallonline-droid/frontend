@@ -220,25 +220,30 @@ export function PaidEventLayout({
       <section
         id="hero"
         ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        className="relative min-h-[100dvh] flex flex-col bg-titanium overflow-hidden"
       >
-        {/* Background Image */}
-        <div className="absolute inset-0">
+        {/* Background Image - responsive: shows full image on mobile, covers on desktop */}
+        <div className="relative w-full pt-16 md:pt-0 md:absolute md:inset-0">
           {event.cover_image_url ? (
-            <OptimizedImage
-              src={event.cover_image_url}
-              alt={event.title}
-              className="w-full h-full object-cover"
-              priority
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={event.cover_image_url}
+                alt={event.title}
+                className="w-full h-auto md:w-full md:h-full md:object-cover md:object-center block"
+              />
+              {/* Gradient overlay for mobile - fades image into content below */}
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-titanium to-transparent md:hidden" />
+            </>
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-titanium to-titanium/80" />
+            <div className="w-full aspect-[3/2] md:aspect-auto md:h-full bg-gradient-to-br from-titanium to-titanium/80" />
           )}
-          <div className="absolute inset-0 bg-black/40" />
+          {/* Desktop overlay */}
+          <div className="hidden md:block absolute inset-0 bg-black/40" />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto w-full pt-20">
+        {/* Hero Content - on mobile sits below the image, on desktop overlaid */}
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto w-full flex-1 flex flex-col items-center justify-center md:pt-20 -mt-16 md:mt-0">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -285,7 +290,7 @@ export function PaidEventLayout({
 
             <motion.button
               onClick={() => scrollToSection('when-where')}
-              className="mt-16 text-ivory/70 hover:text-ivory transition-colors"
+              className="mt-16 mb-8 text-ivory/70 hover:text-ivory transition-colors"
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >

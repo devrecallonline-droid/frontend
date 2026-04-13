@@ -4,7 +4,6 @@ export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    // Wait for params in Next.js 15+ compatible way
     const { id } = await params;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
     
@@ -20,15 +19,31 @@ export async function GET(
         }
 
         if (coverUrl) {
-            // Social media crawlers follow 302 redirects properly.
-            // This hides the complex presigned URL parameters from the OG tags
-            return NextResponse.redirect(coverUrl);
+            // Proxy the image directly instead of redirecting.
+            // Many social media crawlers (WhatsApp, Facebook, Twitter/X) 
+            // do NOT follow 302 redirects for OG images, especially 
+            // presigned URLs with complex query parameters.
+            const imageRes = await fetch(coverUrl);
+            
+            if (imageRes.ok && imageRes.body) {
+                const contentType = imageRes.headers.get('content-type') || 'image/jpeg';
+                const imageBuffer = await imageRes.arrayBuffer();
+                
+                return new NextResponse(imageBuffer, {
+                    status: 200,
+                    headers: {
+                        'Content-Type': contentType,
+                        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+                        'CDN-Cache-Control': 'public, max-age=3600',
+                    },
+                });
+            }
         }
     } catch (e) {
         console.error("Cover route error", e);
     }
     
-    // Fallback image if event has no cover or fetch fails
+    // Fallback: serve the logo if no cover image
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng';
     return NextResponse.redirect(`${baseUrl}/logo-black.png`);
 }

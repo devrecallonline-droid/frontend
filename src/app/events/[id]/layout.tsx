@@ -35,7 +35,9 @@ export async function generateMetadata(
              const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng';
              const coverImageUrl = eventMeta.cover_image_url ? `${baseUrl}/api/events/${id}/cover` : null;
              
-             const images = coverImageUrl ? [coverImageUrl] : [];
+             const ogImages = coverImageUrl 
+                 ? [{ url: coverImageUrl, width: 1200, height: 630, type: 'image/jpeg', alt: title }] 
+                 : [{ url: '/logo-black.png', width: 512, height: 512, alt: 'Nenge' }];
              const fullTitle = `Nenge - ${ownerUsername} invites you to join - ${title}`;
 
              return {
@@ -45,14 +47,15 @@ export async function generateMetadata(
                  openGraph: {
                      title: fullTitle,
                      description: desc,
-                     images: images.length > 0 ? images : ["/logo-black.png"],
+                     images: ogImages,
                      type: 'website',
+                     siteName: 'Nenge',
                  },
                  twitter: {
                      card: 'summary_large_image',
                      title: fullTitle,
                      description: desc,
-                     images: images.length > 0 ? images : ["/logo-black.png"],
+                     images: ogImages,
                  }
              };
         }
