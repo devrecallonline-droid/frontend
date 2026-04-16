@@ -27,7 +27,7 @@ const DynamicIsland = () => {
                     removeAlert(next.id);
                     setCurrentAlert(null);
                 }, 700); // Wait for collapse animation
-            }, 6000); // 6 second visibility
+            }, 3000); // 3 second visibility
 
             return () => clearTimeout(timer);
         }

@@ -495,6 +495,15 @@ const EventDetailPage = () => {
             // Reset state
             setCapturedPhotos({ front: null, left: null, right: null });
             setCaptureStep('front');
+
+            setTimeout(() => {
+                const element = document.getElementById('matched-photos-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }, 100);
         } catch (err: unknown) {
             console.error('Search error:', err);
             addAlert({ type: 'error', message: 'Error during face processing. Please try again.' });
@@ -943,7 +952,7 @@ const EventDetailPage = () => {
     }
 
     // Preview Mode for Owners - allows them to see the guest view
-    if (showPreview && event && isOwner) {
+    if (showPreview && event && isOwner && matchedPhotos === null && !isSearching) {
         return (
             <>
                 {/* Exit Preview Button */}
@@ -981,13 +990,29 @@ const EventDetailPage = () => {
                         onDownload={handleDownloadPhoto}
                     />
                 )}
+
+            <CameraModalComponent
+                showCameraModal={showCameraModal}
+                captureStep={captureStep}
+                capturedPhotos={capturedPhotos}
+                cameraStream={cameraStream}
+                videoRef={videoRef}
+                canvasRef={canvasRef}
+                handleCloseCamera={handleCloseCamera}
+                STEP_META={STEP_META}
+                capturePhoto={capturePhoto}
+                retakeAll={retakeAll}
+                retakeStep={retakeStep}
+                submitPhotos={submitPhotos}
+                isSearching={isSearching}
+            />
             </>
         );
     }
 
     // Render the appropriate layout based on paid status
     // Premium layout is for GUESTS only - owners always see the dashboard
-    if (usePaidLayout && event && !isOwner) {
+    if (usePaidLayout && event && !isOwner && matchedPhotos === null && !isSearching) {
         return (
             <>
                 <PaidEventLayout
@@ -1014,6 +1039,22 @@ const EventDetailPage = () => {
                         onDownload={handleDownloadPhoto}
                     />
                 )}
+
+            <CameraModalComponent
+                showCameraModal={showCameraModal}
+                captureStep={captureStep}
+                capturedPhotos={capturedPhotos}
+                cameraStream={cameraStream}
+                videoRef={videoRef}
+                canvasRef={canvasRef}
+                handleCloseCamera={handleCloseCamera}
+                STEP_META={STEP_META}
+                capturePhoto={capturePhoto}
+                retakeAll={retakeAll}
+                retakeStep={retakeStep}
+                submitPhotos={submitPhotos}
+                isSearching={isSearching}
+            />
             </>
         );
     }
@@ -1381,7 +1422,7 @@ const EventDetailPage = () => {
 
                 {/* Identity Search Results */}
                 {matchedPhotos !== null && (
-                    <div className="mb-20 border-y border-black/5 py-10 sm:py-16">
+                    <div id="matched-photos-section" className="mb-20 border-y border-black/5 py-10 sm:py-16">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
                             <div>
                                 <Badge variant="default" className="bg-titanium text-ivory mb-4">
@@ -2037,7 +2078,36 @@ const EventDetailPage = () => {
             </Modal>
 
             {/* Face Recognition Camera Modal */}
-            {showCameraModal && (
+            <CameraModalComponent
+                showCameraModal={showCameraModal}
+                captureStep={captureStep}
+                capturedPhotos={capturedPhotos}
+                cameraStream={cameraStream}
+                videoRef={videoRef}
+                canvasRef={canvasRef}
+                handleCloseCamera={handleCloseCamera}
+                STEP_META={STEP_META}
+                capturePhoto={capturePhoto}
+                retakeAll={retakeAll}
+                retakeStep={retakeStep}
+                submitPhotos={submitPhotos}
+                isSearching={isSearching}
+            />
+        </div>
+    );
+};
+
+export default EventDetailPage;
+
+
+const CameraModalComponent = ({
+    showCameraModal, captureStep, capturedPhotos, cameraStream,
+    videoRef, canvasRef, handleCloseCamera, STEP_META, capturePhoto,
+    retakeAll, retakeStep, submitPhotos, isSearching
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}: any) => {
+    if (!showCameraModal) return null;
+    return (
                 <div className="fixed inset-0 z-50 bg-black">
                     {captureStep !== 'review' ? (
                         <>
@@ -2223,10 +2293,6 @@ const EventDetailPage = () => {
                         </>
                     )}
                 </div>
-            )}
-        </div>
+
     );
 };
-
-export default EventDetailPage;
-

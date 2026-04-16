@@ -11,46 +11,28 @@
 
 ▲ Next.js 16.1.6 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://172.20.10.4:3000
+- Network:       http://192.168.0.105:3000
 - Environments: .env.local
 
 ✓ Starting...
-✓ Ready in 4.5s
+✓ Ready in 2.2s
 ○ Compiling / ...
- GET / 200 in 6.4s (compile: 5.9s, render: 491ms)
- GET /events 200 in 125ms (compile: 31ms, render: 94ms)
- GET /events/69d0c01d2998b24174c372a1 200 in 2.7s (compile: 1851ms, render: 868ms)
- GET /events/69d0c01d2998b24174c372a1 200 in 1105ms (compile: 14ms, render: 1091ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 913ms (compile: 20ms, render: 893ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 876ms (compile: 11ms, render: 865ms)
-✓ Compiled in 1349ms
-✓ Compiled in 1414ms
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 1376ms (compile: 175ms, render: 1201ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 856ms (compile: 11ms, render: 845ms)
-Failed to fetch event metadata for SEO ReferenceError: fullTitle is not defined
-    at Module.generateMetadata (src/app/events/[id]/layout.tsx:43:25)
-  41 |
-  42 |              return {
-> 43 |                  title: fullTitle,
-     |                         ^
-  44 |                  description: desc,
-  45 |                  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng'),
-  46 |                  openGraph: {
-Failed to fetch event metadata for SEO ReferenceError: fullTitle is not defined
-    at Module.generateMetadata (src/app/events/[id]/layout.tsx:43:25)
-  41 |
-  42 |              return {
-> 43 |                  title: fullTitle,
-     |                         ^
-  44 |                  description: desc,
-  45 |                  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nenge.ng'),
-  46 |                  openGraph: {
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 1536ms (compile: 232ms, render: 1303ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 1536ms (compile: 366ms, render: 1170ms)
-✓ Compiled in 95ms
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 95ms (compile: 42ms, render: 53ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 1640ms (compile: 248ms, render: 1392ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 955ms (compile: 17ms, render: 938ms)
- HEAD /events/69dc7b59c6a6ec2e739dd940 200 in 72ms (compile: 15ms, render: 56ms)
- GET /events/69dc7b59c6a6ec2e739dd940 200 in 824ms (compile: 10ms, render: 815ms)
- HEAD /api/events/69dc7b59c6a6ec2e739dd940/cover 200 in 4.7s (compile: 1743ms, render: 2.9s)
+ GET / 200 in 6.0s (compile: 5.6s, render: 457ms)
+ GET /auth 200 in 805ms (compile: 731ms, render: 75ms)
+ GET /events 200 in 111ms (compile: 31ms, render: 80ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 3.6s (compile: 2.7s, render: 956ms)
+✓ Compiled in 1444ms
+✓ Compiled in 888ms
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 994ms (compile: 509ms, render: 485ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 1814ms (compile: 403ms, render: 1411ms)
+✓ Compiled in 1326ms
+✓ Compiled in 1435ms
+✓ Compiled in 1289ms
+✓ Compiled in 1055ms
+ GET /events 200 in 44ms (compile: 14ms, render: 30ms)
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 2.4s (compile: 271ms, render: 2.2s)
+✓ Compiled in 1367ms
+✓ Finished filesystem cache database compaction in 14.4s
+✓ Compiled in 805ms
+ GET /events/69dc7b59c6a6ec2e739dd940 200 in 2.0s (compile: 104ms, render: 1937ms)
+✓ Compiled in 416ms
