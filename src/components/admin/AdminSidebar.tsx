@@ -9,7 +9,8 @@ import {
     LogOut,
     Menu,
     X,
-    BarChart3
+    BarChart3,
+    Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -21,6 +22,7 @@ const sidebarItems = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
     { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
     { id: 'events', label: 'Events', icon: Calendar, href: '/admin/events' },
+    { id: 'communications', label: 'Communications', icon: Mail, href: '/admin/communications' },
     { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
 ];
 

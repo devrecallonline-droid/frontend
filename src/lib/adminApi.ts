@@ -324,3 +324,110 @@ export const adminSettingsApi = {
 export const adminAnalyticsApi = {
     get: (): Promise<AnalyticsData> => adminFetch('/analytics'),
 };
+
+// ========================
+// Communications Types
+// ========================
+export interface CommunicationUser {
+    id: string;
+    name: string;
+    email: string;
+    status: string;
+    joined: string;
+    avatar_url?: string;
+}
+
+export interface CommunicationUserListResponse {
+    users: CommunicationUser[];
+    total: number;
+    page: number;
+    totalPages: number;
+}
+
+export interface SendCommunicationResponse {
+    totalRecipients: number;
+    successCount: number;
+    failedCount: number;
+    firstError?: string | null;
+    isTestDomain?: boolean;
+    results?: Array<{
+        email: string;
+        status: 'sent' | 'failed';
+        id?: string;
+        error?: string;
+    }>;
+}
+
+export interface SendCommunicationRequest {
+    recipientType: 'all' | 'selected';
+    userIds?: string[];
+    subject: string;
+    htmlBody: string;
+    previewOnly?: boolean;
+    scheduledFor?: string;
+}
+
+export interface ScheduleCommunicationResponse {
+    scheduled: boolean;
+    id: string;
+    scheduledFor: string;
+    recipientCount: number;
+    message: string;
+}
+
+// ========================
+// Communications Types
+// ========================
+export interface EmailHistoryItem {
+    id: string;
+    subject: string;
+    htmlBody: string;
+    recipientType: string;
+    recipientCount: number;
+    successCount: number;
+    failedCount: number;
+    fromEmail: string;
+    isTestDomain: boolean;
+    errorMessage: string | null;
+    status: string;
+    scheduledFor: string | null;
+    sentAt: string | null;
+    sentBy: string;
+    createdAt: string;
+}
+
+export interface EmailHistoryResponse {
+    emails: EmailHistoryItem[];
+    total: number;
+    page: number;
+    totalPages: number;
+}
+
+// ========================
+// Communications API
+// ========================
+export const adminCommunicationsApi = {
+    getUsers: (params: { search?: string; status?: string; page?: number; limit?: number } = {}) => {
+        const query = new URLSearchParams();
+        if (params.search) query.set('search', params.search);
+        if (params.status) query.set('status', params.status);
+        if (params.page) query.set('page', String(params.page));
+        if (params.limit) query.set('limit', String(params.limit));
+        return adminFetch<CommunicationUserListResponse>(`/communications/users?${query.toString()}`);
+    },
+    sendCommunication: (data: SendCommunicationRequest) =>
+        adminFetch<SendCommunicationResponse | ScheduleCommunicationResponse>('/communications/send', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    getHistory: (params: { page?: number; limit?: number } = {}) => {
+        const query = new URLSearchParams();
+        if (params.page) query.set('page', String(params.page));
+        if (params.limit) query.set('limit', String(params.limit));
+        return adminFetch<EmailHistoryResponse>(`/communications/history?${query.toString()}`);
+    },
+    cancelScheduledEmail: (id: string) =>
+        adminFetch<{ detail: string }>(`/communications/schedule/${id}`, {
+            method: 'DELETE',
+        }),
+};
