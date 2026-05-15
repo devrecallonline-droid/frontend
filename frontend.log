@@ -18,3 +18,5 @@
 ✓ Ready in 1489ms
 ○ Compiling /admin/communications ...
  GET /admin/communications 200 in 4.8s (compile: 4.3s, render: 528ms)
+ GET /admin/dashboard 200 in 168ms (compile: 123ms, render: 44ms)
+ GET /admin/communications 200 in 34ms (compile: 8ms, render: 26ms)
