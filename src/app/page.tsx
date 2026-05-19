@@ -529,9 +529,10 @@ const LandingPage = () => {
 
             {/* Links */}
             <div className="flex items-center gap-6 text-xs font-bold uppercase tracking-[0.15em] text-ivory/20">
+              <Link href="/about" className="hover:text-ivory/60 transition-colors duration-200 cursor-pointer">About Us</Link>
               <Link href="/privacy" className="hover:text-ivory/60 transition-colors duration-200 cursor-pointer">Privacy</Link>
               <Link href="/terms" className="hover:text-ivory/60 transition-colors duration-200 cursor-pointer">Terms</Link>
-              <a href="mailto:hello@nenge.ng" className="hover:text-ivory/60 transition-colors duration-200 cursor-pointer">Contact</a>
+              <Link href="/contact" className="hover:text-ivory/60 transition-colors duration-200 cursor-pointer">Contact</Link>
             </div>
 
             {/* Social */}

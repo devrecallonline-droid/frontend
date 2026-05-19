@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-api';
-import { UserCircle, ShieldCheck, Bell, Menu, X, Home, Calendar, Grid3X3, User, LayoutDashboard } from 'lucide-react';
+import { UserCircle, ShieldCheck, Bell, Menu, X, Home, Calendar, Grid3X3, User, LayoutDashboard, Info, Mail } from 'lucide-react';
 import { useGetEventAccessRequestsQuery } from '@/lib/api';
 import { Button } from './ui';
 import { useState, useEffect } from 'react';
@@ -30,6 +30,8 @@ const Navigation = () => {
 
     const navLinks = [
         ...(isAuthenticated ? [{ name: 'Home', href: '/', icon: Home }] : []),
+        { name: 'About Us', href: '/about', icon: Info },
+        { name: 'Contact', href: '/contact', icon: Mail },
         ...(isAuthenticated ? [{ name: 'Events', href: '/events', icon: LayoutDashboard }] : []),
         ...(isAuthenticated ? [{ name: 'Collections', href: '/collections', icon: Grid3X3 }] : []),
         ...(isAuthenticated ? [{ name: 'Profile', href: '/profile', icon: User }] : [])
