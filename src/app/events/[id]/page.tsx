@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth, useUI } from '@/hooks/use-api';
-import { useGetEventsQuery, useGetEventPhotosQuery, useGetEventDetailsQuery, useSearchPhotosMutation, useDeletePhotoMutation, useDeletePhotosBulkMutation, useCreateCollectionMutation, useRequestEventAccessMutation, useGetEventAccessStatusQuery, useUpdateEventMutation, useUploadEventCoverMutation, useGetEventAccessRequestsQuery, useHandleEventAccessRequestMutation, useCreateShareLinkMutation, useGetShareLinksQuery, useDeleteShareLinkMutation, type Photo, type Event } from '@/lib/api';
+import { useGetEventsQuery, useGetEventPhotosQuery, useGetEventDetailsQuery, useSearchPhotosMutation, useSemanticSearchPhotosMutation, useDeletePhotoMutation, useDeletePhotosBulkMutation, useCreateCollectionMutation, useRequestEventAccessMutation, useGetEventAccessStatusQuery, useUpdateEventMutation, useUploadEventCoverMutation, useGetEventAccessRequestsQuery, useHandleEventAccessRequestMutation, useCreateShareLinkMutation, useGetShareLinksQuery, useDeleteShareLinkMutation, type Photo, type Event } from '@/lib/api';
 import { canUseCustomLayout } from '@/lib/featureFlags';
 import { PaidEventLayout } from '@/components/PaidEventLayout';
 import Navigation from '@/components/Navigation';
@@ -268,6 +268,37 @@ const EventDetailPage = () => {
     const [handleAccessRequest] = useHandleEventAccessRequestMutation();
     const [mounted, setMounted] = useState(false);
     const [matchedPhotos, setMatchedPhotos] = useState<Photo[] | null>(null);
+    const [showSemanticModal, setShowSemanticModal] = useState(false);
+    const [semanticResults, setSemanticResults] = useState<{ photo_id: string; url: string; similarity: number }[] | null>(null);
+    const [semanticQuery, setSemanticQuery] = useState('');
+    const [semanticSearchPhotos, { isLoading: isSemanticSearching }] = useSemanticSearchPhotosMutation();
+    const [modalQuery, setModalQuery] = useState('');
+    const [chatSessions, setChatSessions] = useState<{ id: string; title: string; conversation: { role: 'user' | 'ai'; query?: string; results?: { photo_id: string; url: string; similarity: number }[]; isSearching?: boolean }[]; updatedAt: number }[]>([]);
+    const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+    const [showChatSidebar, setShowChatSidebar] = useState(true);
+
+    const activeConversation = chatSessions.find(s => s.id === activeSessionId)?.conversation || [];
+
+    // Load sessions from localStorage on mount
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem(`nenge_sessions_${eventId}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setChatSessions(parsed);
+                if (parsed.length > 0) {
+                    setActiveSessionId(parsed[0].id);
+                }
+            }
+        } catch {}
+    }, [eventId]);
+
+    // Persist sessions to localStorage
+    useEffect(() => {
+        if (chatSessions.length > 0) {
+            localStorage.setItem(`nenge_sessions_${eventId}`, JSON.stringify(chatSessions));
+        }
+    }, [chatSessions, eventId]);
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [showAccessPrompt, setShowAccessPrompt] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -276,6 +307,7 @@ const EventDetailPage = () => {
     const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
     const editFileInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const semanticInputRef = useRef<HTMLInputElement>(null);
 
     // Edit cover cropping state
     const [isEditCropping, setIsEditCropping] = useState(false);
@@ -332,6 +364,13 @@ const EventDetailPage = () => {
             window.removeEventListener('resize', checkTruncation);
         };
     }, [event?.description, isDescriptionExpanded]);
+
+    useEffect(() => {
+        if (isOwner && semanticInputRef.current) {
+            const timer = setTimeout(() => semanticInputRef.current?.focus(), 600);
+            return () => clearTimeout(timer);
+        }
+    }, [isOwner]);
 
     // Step labels and instructions for the 3-pose capture
     const STEP_META: Record<'front' | 'left' | 'right', { label: string; instruction: string; icon: string; stepNum: number }> = {
@@ -463,6 +502,8 @@ const EventDetailPage = () => {
             setShowCameraModal(false);
             addAlert({ type: 'info', message: 'Scanning 3 angles — searching through photos...' });
 
+            setSemanticResults(null);
+
             const result = await searchPhotos({ eventId, formData }).unwrap();
 
             if (result.matches_found > 0) {
@@ -576,6 +617,109 @@ const EventDetailPage = () => {
         setCaptureStep('front');
         setShowCameraModal(true);
         setTimeout(() => startCamera(), 300);
+    };
+
+    const handleNewChat = () => {
+        const newSession = { id: crypto.randomUUID(), title: 'New chat', conversation: [], updatedAt: Date.now() };
+        setChatSessions(prev => [newSession, ...prev]);
+        setActiveSessionId(newSession.id);
+        setModalQuery('');
+        setShowChatSidebar(false);
+    };
+
+    const handleSelectSession = (id: string) => {
+        setActiveSessionId(id);
+        setModalQuery('');
+    };
+
+    const handleDeleteSession = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setChatSessions(prev => {
+            const updated = prev.filter(s => s.id !== id);
+            if (updated.length > 0) {
+                setActiveSessionId(updated[0].id);
+            } else {
+                setActiveSessionId(null);
+            }
+            return updated;
+        });
+    };
+
+    const updateActiveConversation = (updater: (prev: any[]) => any[]) => {
+        setChatSessions(prev => prev.map(s => {
+            if (s.id !== activeSessionId) return s;
+            const newConversation = updater(s.conversation);
+            return { ...s, conversation: newConversation, updatedAt: Date.now(), title: newConversation.length > 0 && s.title === 'New chat' ? (newConversation.find(m => m.role === 'user')?.query?.slice(0, 50) || 'New chat') : s.title };
+        }));
+    };
+
+    const handleOpenSemanticModal = () => {
+        setShowSemanticModal(true);
+    };
+
+    const handleCloseSemanticModal = () => {
+        setShowSemanticModal(false);
+        setSemanticResults(null);
+        setModalQuery('');
+    };
+
+    const runSemanticSearch = async (queryText: string) => {
+        const trimmed = queryText.trim();
+        if (!trimmed) return;
+
+        updateActiveConversation(prev => [...prev, { role: 'user', query: trimmed }, { role: 'ai', isSearching: true }]);
+
+        try {
+            const result = await semanticSearchPhotos({ eventId, query: trimmed }).unwrap();
+            setSemanticResults(result.matches);
+            updateActiveConversation(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: 'ai', results: result.matches || [] };
+                return updated;
+            });
+        } catch (err) {
+            console.error('Semantic search error:', err);
+            updateActiveConversation(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: 'ai', results: [] };
+                return updated;
+            });
+            setSemanticResults([]);
+        }
+    };
+
+    const handleSemanticSearch = async () => {
+        const trimmed = semanticQuery.trim();
+        if (!trimmed) return;
+
+        if (!activeSessionId) {
+            const newSession = { id: crypto.randomUUID(), title: trimmed.slice(0, 50), conversation: [] as any[], updatedAt: Date.now() };
+            setChatSessions(prev => [newSession, ...prev]);
+            setActiveSessionId(newSession.id);
+        }
+        setShowSemanticModal(true);
+        setModalQuery('');
+        await runSemanticSearch(trimmed);
+    };
+
+    const handleModalSearch = async () => {
+        const trimmed = modalQuery.trim();
+        if (!trimmed) return;
+        if (!activeSessionId) {
+            const newSession = { id: crypto.randomUUID(), title: trimmed.slice(0, 50), conversation: [] as any[], updatedAt: Date.now() };
+            setChatSessions(prev => [newSession, ...prev]);
+            setActiveSessionId(newSession.id);
+        }
+        setModalQuery('');
+        await runSemanticSearch(trimmed);
+    };
+
+    const handleModalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleModalSearch();
+    };
+
+    const handleSemanticKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleSemanticSearch();
     };
 
     // Legacy file-input search (kept for fallback, sends single file)
@@ -1298,6 +1442,49 @@ const EventDetailPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* AI Agent — semantic search pinned at bottom of viewport */}
+                {isOwner && (
+                    <div className="fixed bottom-0 left-0 right-0 z-40 px-4 sm:px-6 pb-4 pt-8 bg-gradient-to-t from-ivory via-ivory/95 to-transparent">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="relative group">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-titanium/10 via-titanium/5 to-titanium/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                                <div className="relative flex items-center bg-white border border-black/10 rounded-2xl shadow-lg shadow-black/5 group-focus-within:shadow-xl group-focus-within:border-titanium/20 transition-all">
+                                    <div className="flex items-center gap-3 pl-5 pr-2">
+                                        <div className="w-8 h-8 rounded-lg bg-titanium flex items-center justify-center flex-shrink-0">
+                                            <Sparkles className="w-4 h-4 text-ivory" />
+                                        </div>
+                                        <span className="hidden sm:block text-xs font-semibold text-titanium/30 uppercase tracking-widest">Nenge AI</span>
+                                    </div>
+                                    <input
+                                        ref={semanticInputRef}
+                                        type="text"
+                                        value={semanticQuery}
+                                        onChange={(e) => setSemanticQuery(e.target.value)}
+                                        onKeyDown={handleSemanticKeyDown}
+                                        placeholder="Tell Nenge what you're looking for..."
+                                        onFocus={handleOpenSemanticModal}
+                                        className="flex-1 bg-transparent py-5 pr-2 text-titanium text-base font-medium placeholder:text-titanium/30 focus:outline-none"
+                                    />
+                                    <button
+                                        onClick={handleSemanticSearch}
+                                        disabled={isSemanticSearching || !semanticQuery.trim()}
+                                        className="mr-2 p-2.5 rounded-xl bg-titanium text-ivory hover:bg-titanium/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg shadow-black/10"
+                                    >
+                                        {isSemanticSearching ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="text-xs text-titanium/50 font-semibold mt-3 text-center">
+                                Nenge AI scans every photo to find the moments you describe
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Pending Access Requests (Owner only) */}
                 {isOwner && (() => {
@@ -2093,6 +2280,24 @@ const EventDetailPage = () => {
                 submitPhotos={submitPhotos}
                 isSearching={isSearching}
             />
+
+            {/* Semantic Search Results Modal */}
+            <SemanticResultsModal
+                isOpen={showSemanticModal}
+                conversation={activeConversation}
+                modalQuery={modalQuery}
+                setModalQuery={setModalQuery}
+                onSearch={handleModalSearch}
+                onKeyDown={handleModalKeyDown}
+                onClose={handleCloseSemanticModal}
+                sessions={chatSessions}
+                activeSessionId={activeSessionId}
+                showSidebar={showChatSidebar}
+                onNewChat={handleNewChat}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                onToggleSidebar={() => setShowChatSidebar(s => !s)}
+            />
         </div>
     );
 };
@@ -2294,5 +2499,231 @@ const CameraModalComponent = ({
                     )}
                 </div>
 
+    );
+};
+
+const SemanticResultsModal = ({
+    isOpen,
+    conversation,
+    modalQuery,
+    setModalQuery,
+    onSearch,
+    onKeyDown,
+    onClose,
+    sessions,
+    activeSessionId,
+    showSidebar,
+    onNewChat,
+    onSelectSession,
+    onDeleteSession,
+    onToggleSidebar,
+}: {
+    isOpen: boolean;
+    conversation: { role: 'user' | 'ai'; query?: string; results?: { photo_id: string; url: string; similarity: number }[]; isSearching?: boolean }[];
+    modalQuery: string;
+    setModalQuery: (q: string) => void;
+    onSearch: () => void;
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    onClose: () => void;
+    sessions: { id: string; title: string; conversation: any[]; updatedAt: number }[];
+    activeSessionId: string | null;
+    showSidebar: boolean;
+    onNewChat: () => void;
+    onSelectSession: (id: string) => void;
+    onDeleteSession: (id: string, e: React.MouseEvent) => void;
+    onToggleSidebar: () => void;
+}) => {
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [conversation]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 bg-ivory flex">
+            {/* Sidebar */}
+            <div className={`${showSidebar ? 'w-72' : 'w-0'} flex-shrink-0 bg-white border-r border-black/5 flex flex-col transition-all duration-200 overflow-hidden`}>
+                <div className="p-4 border-b border-black/5">
+                    <button
+                        onClick={onNewChat}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-titanium text-ivory text-sm font-semibold hover:bg-titanium/90 transition-colors"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        New Chat
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {sessions.length === 0 ? (
+                        <p className="text-xs text-titanium/30 text-center pt-8 px-4">No previous sessions</p>
+                    ) : (
+                        sessions.map(s => (
+                            <div
+                                key={s.id}
+                                onClick={() => onSelectSession(s.id)}
+                                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors group flex items-center justify-between cursor-pointer ${s.id === activeSessionId ? 'bg-titanium/10 text-titanium font-semibold' : 'text-titanium/60 hover:bg-black/5 hover:text-titanium'}`}
+                            >
+                                <span className="truncate">{s.title}</span>
+                                <span
+                                    onClick={(e) => onDeleteSession(s.id, e)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-black/10 transition-all flex-shrink-0 cursor-pointer"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </span>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Main chat area */}
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Top bar */}
+                <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2">
+                    <button
+                        onClick={onToggleSidebar}
+                        className="p-2 rounded-xl hover:bg-black/5 transition-colors"
+                    >
+                        <svg className="w-5 h-5 text-titanium/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors"
+                    >
+                        <X className="w-4 h-4 text-titanium/60" />
+                    </button>
+                </div>
+
+                {/* Chat scroll area */}
+                <div className="flex-1 overflow-y-auto">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+                        {conversation.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center text-center min-h-[50vh]">
+                                <div className="w-16 h-16 rounded-2xl bg-titanium/5 flex items-center justify-center mb-5">
+                                    <Sparkles className="w-8 h-8 text-titanium/30" />
+                                </div>
+                                <p className="text-xl font-bold text-titanium mb-2">What are you looking for?</p>
+                                <p className="text-sm text-titanium/40 max-w-md">
+                                    Try &ldquo;people laughing&rdquo;, &ldquo;cake cutting&rdquo;, or &ldquo;group photo near the entrance&rdquo;
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {conversation.map((msg, i) => (
+                                    msg.role === 'user' ? (
+                                        <div key={i} className="flex justify-end">
+                                            <div className="bg-titanium text-ivory rounded-2xl rounded-br-md px-5 py-3.5 shadow-md">
+                                                <p className="text-sm font-medium leading-relaxed">{msg.query}</p>
+                                            </div>
+                                        </div>
+                                    ) : msg.isSearching ? (
+                                        <div key={i} className="flex justify-start">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-6 h-6 rounded-md bg-titanium flex items-center justify-center">
+                                                        <Sparkles className="w-3 h-3 text-ivory" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-titanium/40 uppercase tracking-widest">Nenge AI</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 pl-1">
+                                                    <div className="flex gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-titanium/30 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                        <div className="w-2 h-2 rounded-full bg-titanium/30 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                        <div className="w-2 h-2 rounded-full bg-titanium/30 animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                    </div>
+                                                    <span className="text-sm text-titanium/40 font-medium">Scanning photos...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div key={i} className="flex justify-start">
+                                            <div className="w-full">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-6 h-6 rounded-md bg-titanium flex items-center justify-center">
+                                                        <Sparkles className="w-3 h-3 text-ivory" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-titanium/40 uppercase tracking-widest">Nenge AI</span>
+                                                </div>
+                                                {msg.results && msg.results.length > 0 ? (
+                                                    <div>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                                            {msg.results.map((match) => (
+                                                                <div
+                                                                    key={match.photo_id}
+                                                                    className="relative group rounded-2xl overflow-hidden bg-black/5 aspect-square border border-black/5"
+                                                                >
+                                                                    <img
+                                                                        src={match.url}
+                                                                        alt=""
+                                                                        className="w-full h-full object-cover"
+                                                                        loading="lazy"
+                                                                    />
+                                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 pt-8">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-white text-xs font-bold bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                                                                {Math.round(match.similarity * 100)}%
+                                                                            </span>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const a = document.createElement('a');
+                                                                                    a.href = match.url;
+                                                                                    a.download = 'photo.jpg';
+                                                                                    a.click();
+                                                                                }}
+                                                                                className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors"
+                                                                            >
+                                                                                <Download className="w-3.5 h-3.5 text-white" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-xs text-titanium/30 font-medium mt-3">
+                                                            {msg.results.length} photo{msg.results.length !== 1 ? 's' : ''} matched
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-3 text-titanium/40">
+                                                        <Search className="w-5 h-5" />
+                                                        <span className="text-sm font-medium">No matches found — try a different description</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                ))}
+                                <div ref={chatEndRef} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Bottom input bar */}
+                <div className="border-t border-black/5 bg-white/80 backdrop-blur-sm px-4 sm:px-6 py-4">
+                    <div className="max-w-4xl mx-auto flex items-center gap-2 bg-white border border-black/10 rounded-2xl pl-5 pr-2 py-1.5 shadow-sm">
+                        <input
+                            type="text"
+                            value={modalQuery}
+                            onChange={(e) => setModalQuery(e.target.value)}
+                            onKeyDown={onKeyDown}
+                            placeholder="Ask Nenge to find something..."
+                            className="flex-1 bg-transparent text-titanium text-sm font-medium placeholder:text-titanium/20 focus:outline-none"
+                            autoFocus
+                        />
+                        <button
+                            onClick={onSearch}
+                            disabled={!modalQuery.trim()}
+                            className="p-2.5 rounded-xl bg-titanium text-ivory hover:bg-titanium/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };

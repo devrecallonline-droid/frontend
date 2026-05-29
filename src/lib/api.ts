@@ -244,6 +244,14 @@ export const apiSlice = createApi({
                 body: formData,
             }),
         }),
+        semanticSearchPhotos: builder.mutation<{ matches: { photo_id: string; url: string; similarity: number }[], total_matches: number, query: string }, { eventId: string; query: string; max_results?: number; threshold?: number }>({
+            query: ({ eventId, query, max_results, threshold }) => ({
+                url: `/events/${eventId}/semantic-search`,
+                method: 'POST',
+                body: { query, max_results: max_results || 50, threshold: threshold || 0.2 },
+                headers: { 'Content-Type': 'application/json' },
+            }),
+        }),
         getEventPhotos: builder.query<{ photos: Photo[], hasMore: boolean, totalPhotos: number }, { eventId: string; page: number; limit: number }>({
             query: ({ eventId, page, limit }) => `/events/${eventId}/photos?page=${page}&limit=${limit}`,
             providesTags: (result, error, { eventId }) => [{ type: 'Event', id: eventId }],
@@ -444,6 +452,7 @@ export const {
     useGetUploadUrlsMutation,
     useConfirmUploadsMutation,
     useSearchPhotosMutation,
+    useSemanticSearchPhotosMutation,
     useGetEventPhotosQuery,
     useDeletePhotoMutation,
     useDeletePhotosBulkMutation,
