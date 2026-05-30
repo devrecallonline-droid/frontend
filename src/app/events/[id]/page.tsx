@@ -671,10 +671,10 @@ const EventDetailPage = () => {
 
         try {
             const result = await semanticSearchPhotos({ eventId, query: trimmed }).unwrap();
-            setSemanticResults(result.matches);
+            setSemanticResults(result.photos as any);
             updateActiveConversation(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: 'ai', results: result.matches || [] };
+                updated[updated.length - 1] = { role: 'ai', results: (result.photos as any) || [] };
                 return updated;
             });
         } catch (err) {

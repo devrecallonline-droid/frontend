@@ -87,7 +87,7 @@ const baseQueryWithErrorHandling = async (args: any, api: any, extraOptions: any
     const result = await baseQuery(args, api, extraOptions);
     if (result.error) {
         const error = result.error as any;
-        
+
         // Suppress 401 errors (unauthorized) and 404 (not found) from the global logger
         // since they are expected and handled by specific components or auth redirects
         if (error.status === 401 || error.status === 404) return result;
@@ -244,7 +244,7 @@ export const apiSlice = createApi({
                 body: formData,
             }),
         }),
-        semanticSearchPhotos: builder.mutation<{ matches: { photo_id: string; url: string; similarity: number }[], total_matches: number, query: string }, { eventId: string; query: string; max_results?: number; threshold?: number }>({
+        semanticSearchPhotos: builder.mutation<{ photos: Photo[], matches_found: number }, { eventId: string; query: string; max_results?: number; threshold?: number }>({
             query: ({ eventId, query, max_results, threshold }) => ({
                 url: `/events/${eventId}/semantic-search`,
                 method: 'POST',
