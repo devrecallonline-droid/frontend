@@ -1443,8 +1443,10 @@ const EventDetailPage = () => {
                     </div>
                 </div>
 
-                {/* AI Agent — semantic search pinned at bottom of viewport */}
-                {isOwner && (
+                {/* ═══════════════════════════════════════
+                    AI Agent — commented out for now
+                    ═══════════════════════════════════════ */}
+                {false && isOwner && (
                     <div className="fixed bottom-0 left-0 right-0 z-40 px-4 sm:px-6 pb-4 pt-8 bg-gradient-to-t from-ivory via-ivory/95 to-transparent">
                         <div className="max-w-2xl mx-auto">
                             <div className="relative group">

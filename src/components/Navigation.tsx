@@ -4,158 +4,133 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-api';
-import { UserCircle, ShieldCheck, Bell, Menu, X, Home, Calendar, Grid3X3, User, LayoutDashboard, Info, Mail } from 'lucide-react';
-import { useGetEventAccessRequestsQuery } from '@/lib/api';
+import { UserCircle, ShieldCheck, Menu, X } from 'lucide-react';
 import { Button } from './ui';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const Navigation = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user, isAuthenticated } = useAuth();
-    const { data: requestsData } = useGetEventAccessRequestsQuery(undefined, {
-        skip: !isAuthenticated,
-        pollingInterval: 30000 // Poll every 30s for new requests
-    });
     const router = useRouter();
-    const pendingCount = requestsData?.count || 0;
+    const [mobileOpen, setMobileOpen] = useState(false);
 
-    // Prevent scroll when menu is open
-    useEffect(() => {
-        if (isMenuOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-    }, [isMenuOpen]);
+    const linkClass = "px-3 sm:px-4 py-2 hover:bg-black/5 rounded-full text-xs sm:text-sm font-medium transition-colors text-titanium/60 hover:text-titanium whitespace-nowrap";
 
     const navLinks = [
-        ...(isAuthenticated ? [{ name: 'Home', href: '/', icon: Home }] : []),
-        { name: 'About Us', href: '/about', icon: Info },
-        { name: 'Contact', href: '/contact', icon: Mail },
-        ...(isAuthenticated ? [{ name: 'Events', href: '/events', icon: LayoutDashboard }] : []),
-        ...(isAuthenticated ? [{ name: 'Collections', href: '/collections', icon: Grid3X3 }] : []),
-        ...(isAuthenticated ? [{ name: 'Profile', href: '/profile', icon: User }] : [])
+        { name: 'Home', href: '/' },
+        { name: 'About', href: '/about' },
+        { name: 'Contact', href: '/contact' },
+        ...(isAuthenticated
+            ? [
+                { name: 'Events', href: '/events' },
+                { name: 'Collections', href: '/collections' },
+                { name: 'Profile', href: '/profile' },
+            ]
+            : []),
     ];
+
+    const handleNav = (href: string) => {
+        setMobileOpen(false);
+        router.push(href);
+    };
 
     return (
         <>
-            <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-[50] w-full max-w-4xl px-4 flex justify-center">
-                <div className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-full px-4 sm:px-6 py-3 flex items-center justify-between gap-4 w-full">
+            <nav className="fixed top-0 left-0 right-0 z-[40] flex justify-center sm:top-6">
+                <div className="bg-white sm:border border-black/5 sm:shadow-lg sm:rounded-full px-4 sm:px-6 py-3 flex items-center justify-between gap-4 w-full sm:max-w-4xl sm:mx-4">
                     {/* Logo */}
                     <Link href="/" className="flex items-center group">
-                        <Image src="/logo-black.png" alt="Nenge Logo" width={130} height={52} className="h-9 w-auto object-contain" priority />
+                        <Image src="/logo-black.png" alt="Nenge Logo" width={100} height={40} className="h-7 w-auto object-contain" />
                     </Link>
 
-                    {/* Desktop Nav Links */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {navLinks.map((link) => {
-                            const isEvents = link.href === '/events';
-                            return (
-                                <Link
-                                    key={link.name}
-                                    href={link.href}
-                                    className="relative px-4 py-2 text-sm font-semibold text-titanium/60 hover:text-titanium rounded-full hover:bg-black/5 transition-all duration-200 cursor-pointer"
-                                >
-                                    {link.name}
-                                    {isEvents && pendingCount > 0 && (
-                                        <span className="absolute -top-1 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black flex items-center justify-center rounded-full">
-                                            {pendingCount}
-                                        </span>
-                                    )}
-                                </Link>
-                            );
-                        })}
+                    {/* Desktop Navigation Links */}
+                    <div className="hidden sm:flex items-center space-x-1">
+                        {navLinks.map((link) => (
+                            <Link key={link.name} href={link.href} className={linkClass}>
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Desktop Auth / User Section */}
+                    <div className="hidden sm:flex items-center space-x-2">
                         {isAuthenticated ? (
                             <button
                                 onClick={() => router.push('/profile')}
-                                className="ml-2 w-9 h-9 rounded-full bg-titanium/5 flex items-center justify-center hover:bg-titanium/10 transition-colors cursor-pointer"
-                                aria-label="Profile"
+                                className="flex items-center space-x-2 px-2 sm:px-3 py-1.5 hover:bg-black/5 rounded-full transition-all group shrink-0"
                             >
-                                <UserCircle className="w-5 h-5 text-titanium/50" />
+                                <UserCircle className="w-5 h-5 text-titanium/30 transition-colors group-hover:text-titanium" />
+                                <span className="hidden sm:inline-block text-sm font-semibold text-titanium/80 group-hover:text-titanium truncate max-w-[100px]">
+                                    {user?.username}
+                                </span>
                             </button>
                         ) : (
-                            <button
-                                onClick={() => router.push('/auth')}
-                                className="ml-2 px-5 py-2 rounded-full bg-titanium text-white text-sm font-bold hover:bg-titanium/90 transition-colors cursor-pointer"
-                            >
-                                Get Started
-                            </button>
+                            <Button variant="default" size="sm" onClick={() => router.push('/auth')}>
+                                Sign In
+                            </Button>
                         )}
                     </div>
 
-                    {/* Mobile Menu Toggle */}
+                    {/* Mobile Hamburger */}
                     <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors text-titanium cursor-pointer"
-                        aria-label="Toggle menu"
+                        onClick={() => setMobileOpen(true)}
+                        className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-colors"
+                        aria-label="Open menu"
                     >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        <Menu className="w-5 h-5 text-titanium/60" />
                     </button>
                 </div>
             </nav>
 
-            {/* Full-Screen Menu Overlay (Mobile Only) */}
-            <div className={`md:hidden fixed inset-0 z-[45] transition-all duration-500 ease-apple ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-                <div className="absolute inset-0 bg-white/95 backdrop-blur-3xl" />
+            {/* Mobile Menu Overlay */}
+            {mobileOpen && (
+                <div className="fixed inset-0 z-[50] flex flex-col bg-white sm:hidden">
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between px-5 pt-6 pb-4">
+                        <Image src="/logo-black.png" alt="Nenge Logo" width={100} height={40} className="h-7 w-auto object-contain" />
+                        <button
+                            onClick={() => setMobileOpen(false)}
+                            className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
+                            aria-label="Close menu"
+                        >
+                            <X className="w-5 h-5 text-titanium/60" />
+                        </button>
+                    </div>
 
-                <div className="relative h-full flex flex-col justify-center px-12 space-y-8">
-                    {navLinks.map((link, idx) => {
-                        const Icon = link.icon;
-                        const isEvents = link.href === '/events';
-
-                        return (
-                            <Link
+                    {/* Links */}
+                    <div className="flex-1 flex flex-col justify-center px-8 pb-12 space-y-1">
+                        {navLinks.map((link) => (
+                            <button
                                 key={link.name}
-                                href={link.href}
-                                onClick={() => setIsMenuOpen(false)}
-                                className={`flex items-center gap-6 group transition-all duration-500 transform ${isMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}
-                                style={{ transitionDelay: `${idx * 100}ms` }}
+                                onClick={() => handleNav(link.href)}
+                                className="w-full text-left py-4 text-xl font-medium text-titanium/70 hover:text-titanium border-b border-black/5 last:border-b-0 transition-colors"
                             >
-                                <div className="w-14 h-14 rounded-apple-md bg-titanium/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                                    <Icon className="w-7 h-7 text-titanium" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-3xl font-black text-titanium tracking-tighter uppercase relative">
-                                        {link.name}
-                                        {isEvents && pendingCount > 0 && (
-                                            <span className="absolute -top-2 -right-6 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white">
-                                                {pendingCount}
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span className="text-xs font-bold tracking-[0.2em] text-titanium/30 uppercase mt-1">Discover more</span>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                                {link.name}
+                            </button>
+                        ))}
+                    </div>
 
-                    <div className={`pt-12 border-t border-black/5 transition-all duration-500 delay-500 ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    {/* Bottom auth */}
+                    <div className="px-8 pb-10">
                         {isAuthenticated ? (
-                            <div className="flex items-center gap-4">
-                                <UserCircle className="w-10 h-10 text-titanium/20" />
-                                <div>
-                                    <p className="text-sm font-bold text-titanium">{user?.username}</p>
-                                    <button
-                                        onClick={() => { router.push('/profile'); setIsMenuOpen(false); }}
-                                        className="text-xs font-bold text-titanium/40 uppercase tracking-widest hover:text-titanium transition-colors"
-                                    >
-                                        View Profile
-                                    </button>
-                                </div>
-                            </div>
+                            <button
+                                onClick={() => handleNav('/profile')}
+                                className="w-full flex items-center justify-center gap-3 py-4 rounded-full bg-black/5 hover:bg-black/10 transition-colors text-titanium/80 font-semibold"
+                            >
+                                <UserCircle className="w-5 h-5" />
+                                {user?.username || 'Profile'}
+                            </button>
                         ) : (
                             <Button
                                 variant="default"
-                                size="lg"
-                                className="w-full text-lg h-16 rounded-full"
-                                onClick={() => { router.push('/auth'); setIsMenuOpen(false); }}
+                                className="w-full !h-14 text-base"
+                                onClick={() => handleNav('/auth')}
                             >
-                                Get Started
+                                Sign In
                             </Button>
                         )}
                     </div>
                 </div>
-            </div>
+            )}
         </>
     );
 };
