@@ -36,7 +36,8 @@ import {
     ExternalLink,
     Eye,
     EyeOff,
-    Camera
+    Camera,
+    QrCode
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import 'react-easy-crop/react-easy-crop.css';
@@ -872,7 +873,7 @@ const EventDetailPage = () => {
 
     if (!mounted) return null;
 
-    if (eventsLoading || photosLoading) {
+    if (eventsLoading || detailsLoading || photosLoading) {
         return (
             <div className="min-h-screen bg-ivory flex flex-col">
                 <Navigation />
@@ -1217,229 +1218,192 @@ const EventDetailPage = () => {
                     Back to Events
                 </button>
 
-                {/* Event Dashboard Hero */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-16">
-                    <div className="lg:col-span-3">
-                        <Card className="p-4 sm:p-8 lg:p-10 bg-white/40 border-white/60 h-full flex flex-col justify-between">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2 mb-8">
-                                    <Badge variant="secondary" className="bg-titanium/5 text-titanium">
-                                        Live Event
-                                    </Badge>
-                                    <Badge variant="secondary" className="bg-titanium/5 text-titanium">
-                                        Private
-                                    </Badge>
-                                    {event.owner_username === user?.username && (
-                                        <Badge variant="default" className="bg-titanium text-ivory">
-                                            Host
-                                        </Badge>
-                                    )}
-                                    {isOwner && (
-                                        <button
-                                            onClick={() => {
-                                                setEditForm({
-                                                    title: event.title || '',
-                                                    description: event.description || '',
-                                                    event_date: event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : '',
-                                                    location: event.location || '',
-                                                    is_private: event.is_private !== false,
-                                                    has_paid_features: event.has_paid_features || false,
-                                                });
-                                                setEditCoverImage(null);
-                                                setEditPreviewUrl(event.cover_image_url || null);
-                                                setOriginalCoverUrl(event.cover_image_url || null);
-                                                setIsEditCropping(false);
-                                                setEditCrop({ x: 0, y: 0 });
-                                                setEditZoom(1);
-                                                setShowEditModal(true);
-                                            }}
-                                            className="ml-auto p-2 rounded-full bg-titanium/5 hover:bg-titanium/10 text-titanium transition-colors"
-                                            title="Event Settings"
-                                        >
-                                            <Settings className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                    {isOwner && (
-                                        <button
-                                            onClick={() => setShowPreview(true)}
-                                            className="p-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 text-amber-700 transition-colors border border-amber-200"
-                                            title="Preview Guest View"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
+                {/* Event Dashboard Hero - Gallery Exhibition Layout */}
+                <div className="mb-16 sm:mb-24">
+                    {/* 1. The Kicker (Badges, Stats, Settings) */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-8 sm:mb-12">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary" className="bg-titanium/5 text-titanium">
+                                Live Event
+                            </Badge>
+                            <Badge variant="secondary" className="bg-titanium/5 text-titanium">
+                                Private
+                            </Badge>
+                            {event.owner_username === user?.username && (
+                                <Badge variant="default" className="bg-titanium text-ivory">
+                                    Host
+                                </Badge>
+                            )}
+                        </div>
 
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-                                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-titanium tracking-tighter leading-[0.9]">
-                                        {event.title}
-                                    </h1>
+                        <div className="hidden md:flex items-center gap-3 text-[10px] font-bold text-titanium/40 uppercase tracking-widest">
+                            <span>{event.event_date ? new Date(event.event_date).toLocaleDateString() : 'TBD'}</span>
+                            <span>•</span>
+                            <span className="truncate max-w-[150px]">{event.location || 'TBD'}</span>
+                            <span>•</span>
+                            <span>{detailsLoading ? '...' : (event.face_count !== undefined ? `${event.face_count}` : '0')} Faces</span>
+                        </div>
 
-                                    <EventQrCode 
-                                        url={`https://nenge.ng/events/${event.id}`} 
-                                        eventName={event.title}
-                                        lightMode={true} 
-                                    />
-                                </div>
-
-                                <div>
-                                    <p
-                                        ref={descriptionRef}
-                                        className={`text-xl text-titanium/60 max-w-2xl font-medium leading-relaxed transition-all duration-300 ${isDescriptionExpanded ? 'mb-4' : 'line-clamp-3 md:line-clamp-4 mb-2'}`}
-                                    >
-                                        {event.description || 'No description provided.'}
-                                    </p>
-                                    {(isDescriptionTruncated || isDescriptionExpanded) && event.description && (
-                                        <button
-                                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                            className="text-sm font-bold text-titanium/70 hover:text-titanium transition-colors mb-12 flex items-center gap-1"
-                                        >
-                                            {isDescriptionExpanded ? 'Read less' : 'Read more'}
-                                        </button>
-                                    )}
-                                    {(!event.description || (!isDescriptionTruncated && !isDescriptionExpanded)) && (
-                                        <div className="mb-12"></div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-10 pt-8 sm:pt-10 border-t border-black/5">
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-titanium/5 rounded-lg flex items-center justify-center mr-3 sm:mr-4 text-titanium flex-shrink-0">
-                                        <Calendar className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold italic text-titanium/30 uppercase tracking-widest">When</p>
-                                        <p className="text-sm font-bold text-titanium">
-                                            {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'TBD'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-titanium/5 rounded-lg flex items-center justify-center mr-3 sm:mr-4 text-titanium flex-shrink-0">
-                                        <MapPin className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold italic text-titanium/30 uppercase tracking-widest">Where</p>
-                                        <p className="text-sm font-bold text-titanium truncate max-w-[120px]">
-                                            {event.location || 'TBD'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-titanium/5 rounded-lg flex items-center justify-center mr-3 sm:mr-4 text-titanium flex-shrink-0">
-                                        <ShieldCheck className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold italic text-titanium/30 uppercase tracking-widest">Privacy</p>
-                                        <p className="text-sm font-bold text-titanium">7 Days</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-titanium/5 rounded-lg flex items-center justify-center mr-3 sm:mr-4 text-titanium flex-shrink-0">
-                                        <Users className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold italic text-titanium/30 uppercase tracking-widest">Faces</p>
-                                        <p className="text-sm font-bold text-titanium">
-                                            {detailsLoading ? '...' : (event.face_count !== undefined ? `${event.face_count}` : '0')}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
+                        <div className="flex items-center gap-2">
+                            {isOwner && (
+                                <button
+                                    onClick={() => {
+                                        setEditForm({
+                                            title: event.title || '',
+                                            description: event.description || '',
+                                            event_date: event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : '',
+                                            location: event.location || '',
+                                            is_private: event.is_private !== false,
+                                            has_paid_features: event.has_paid_features || false,
+                                        });
+                                        setEditCoverImage(null);
+                                        setEditPreviewUrl(event.cover_image_url || null);
+                                        setOriginalCoverUrl(event.cover_image_url || null);
+                                        setIsEditCropping(false);
+                                        setEditCrop({ x: 0, y: 0 });
+                                        setEditZoom(1);
+                                        setShowEditModal(true);
+                                    }}
+                                    className="p-2 rounded-full bg-titanium/5 hover:bg-titanium/10 text-titanium transition-colors"
+                                    title="Event Settings"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                </button>
+                            )}
+                            {isOwner && (
+                                <button
+                                    onClick={() => setShowPreview(true)}
+                                    className="p-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 text-amber-700 transition-colors border border-amber-200"
+                                    title="Preview Guest View"
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="lg:col-span-1">
-                        <div className="rounded-3xl p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl h-full flex flex-col justify-center">
-                            <h3 className="text-2xl font-black mb-3 tracking-tight text-white">Find Your Photos</h3>
-                            <p className="text-slate-300 mb-6 text-sm font-medium leading-relaxed">
-                                {isOwner
-                                    ? "Upload photos or use a selfie to find yourself."
-                                    : "Upload a selfie and our AI will find every photo of you."}
-                            </p>
-                            <div className="space-y-3">
-                                {isOwner && (
-                                    <Button
-                                        onClick={() => router.push(`/upload/${eventId}`)}
-                                        className="w-full bg-white text-slate-900 hover:bg-slate-100 py-5 h-auto font-semibold whitespace-nowrap"
-                                    >
-                                        <Upload className="w-5 h-5 mr-2 flex-shrink-0" />
-                                        <span className="truncate">Add Photos</span>
-                                    </Button>
-                                )}
-                                {isOwner && (
-                                    <Button
-                                        onClick={() => setShowShareModal(true)}
-                                        variant="outline"
-                                        className="w-full py-5 h-auto bg-transparent text-white border-white/30 hover:bg-white/10 font-semibold whitespace-nowrap"
-                                    >
-                                        <Link2 className="w-5 h-5 mr-2 flex-shrink-0" />
-                                        <span className="truncate">Share Download Link</span>
-                                    </Button>
-                                )}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleSearch}
-                                    accept="image/*"
-                                    className="hidden"
-                                />
-                                {/* Hidden file inputs - one for desktop, one for mobile camera */}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleSearch}
-                                    accept="image/*"
-                                    className="hidden"
-                                />
-                                <Button
-                                    onClick={handleFindMe}
-                                    disabled={isSearching}
-                                    variant="outline"
-                                    className="w-full py-5 h-auto bg-transparent text-white border-white/30 hover:bg-white/10 font-semibold whitespace-nowrap"
-                                >
-                                    {isSearching ? (
-                                        <Loader2 className="w-5 h-5 mr-2 animate-spin flex-shrink-0" />
-                                    ) : (
-                                        <Search className="w-5 h-5 mr-2 flex-shrink-0" />
-                                    )}
-                                    <span className="truncate">{isSearching ? 'Scanning...' : 'Scan for My Photos'}</span>
-                                </Button>
+                    {/* 2. The Hero Title */}
+                    <h1 className="text-6xl sm:text-7xl md:text-9xl font-black text-titanium tracking-tighter leading-[0.9] mb-6">
+                        {event.title}
+                    </h1>
 
-                                {/* Request Access button for non-owners */}
-                                {!isOwner && (
-                                    <Button
-                                        onClick={handleRequestAccess}
-                                        variant="outline"
-                                        disabled={eventAccessData?.status === 'pending' || eventAccessData?.status === 'approved'}
-                                        className={`w-full py-5 h-auto font-semibold whitespace-nowrap ${eventAccessData?.status === 'pending'
-                                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 cursor-not-allowed'
-                                            : eventAccessData?.status === 'approved' || eventAccessData?.has_access
-                                                ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-not-allowed'
-                                                : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
-                                            }`}
-                                    >
-                                        {eventAccessData?.status === 'pending' ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 mr-2 animate-spin flex-shrink-0" />
-                                                <span className="truncate">Access Request Pending</span>
-                                            </>
-                                        ) : eventAccessData?.status === 'approved' || eventAccessData?.has_access ? (
-                                            <>
-                                                <Unlock className="w-5 h-5 mr-2 flex-shrink-0" />
-                                                <span className="truncate">Access Granted</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Lock className="w-5 h-5 mr-2 flex-shrink-0" />
-                                                <span className="truncate">Request Event Access</span>
-                                            </>
-                                        )}
-                                    </Button>
+                    {/* Mobile Stats (visible only on small screens) */}
+                    <div className="md:hidden flex flex-wrap items-center gap-2 text-[10px] font-bold text-titanium/40 uppercase tracking-widest mb-6">
+                        <span>{event.event_date ? new Date(event.event_date).toLocaleDateString() : 'TBD'}</span>
+                        <span>•</span>
+                        <span className="truncate max-w-[150px]">{event.location || 'TBD'}</span>
+                        <span>•</span>
+                        <span>{detailsLoading ? '...' : (event.face_count !== undefined ? `${event.face_count}` : '0')} Faces</span>
+                    </div>
+
+                    {/* 3. The Description */}
+                    <div className="max-w-3xl mb-10 sm:mb-16">
+                        <p
+                            ref={descriptionRef}
+                            className={`text-xl text-titanium/60 font-medium leading-relaxed transition-all duration-300 ${isDescriptionExpanded ? 'mb-4' : 'line-clamp-3 md:line-clamp-4 mb-2'}`}
+                        >
+                            {event.description || 'No description provided.'}
+                        </p>
+                        {(isDescriptionTruncated || isDescriptionExpanded) && event.description && (
+                            <button
+                                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                className="text-sm font-bold text-titanium/70 hover:text-titanium transition-colors flex items-center gap-1"
+                            >
+                                {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* 4. The Action Toolbar */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        {isOwner && (
+                            <Button
+                                onClick={() => router.push(`/upload/${eventId}`)}
+                                className="bg-titanium text-ivory hover:bg-black h-12 px-6 rounded-full font-bold tracking-tight"
+                            >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Add Photos
+                            </Button>
+                        )}
+                        
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleSearch}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                        <Button
+                            onClick={handleFindMe}
+                            disabled={isSearching}
+                            variant="outline"
+                            className="h-12 px-6 rounded-full border-titanium/[0.15] text-titanium/70 hover:bg-titanium/[0.05] font-bold tracking-tight"
+                        >
+                            {isSearching ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Search className="w-4 h-4 mr-2" />
+                            )}
+                            {isSearching ? 'Scanning...' : 'Scan for My Photos'}
+                        </Button>
+
+                        {isOwner && (
+                            <Button
+                                onClick={() => setShowShareModal(true)}
+                                variant="outline"
+                                className="h-12 px-6 rounded-full border-titanium/[0.15] text-titanium/70 hover:bg-titanium/[0.05] font-bold tracking-tight"
+                            >
+                                <Link2 className="w-4 h-4 mr-2" />
+                                Share Link
+                            </Button>
+                        )}
+
+                        <EventQrCode 
+                            url={`https://nenge.ng/events/${event.id}`} 
+                            eventName={event.title}
+                            lightMode={true}
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="h-12 px-6 rounded-full border-titanium/[0.15] text-titanium/70 hover:bg-titanium/[0.05] font-bold tracking-tight"
+                                >
+                                    <QrCode className="w-4 h-4 mr-2" />
+                                    QR Code
+                                </Button>
+                            }
+                        />
+
+                        {/* Request Access button for non-owners */}
+                        {!isOwner && (
+                            <Button
+                                onClick={handleRequestAccess}
+                                variant="outline"
+                                disabled={eventAccessData?.status === 'pending' || eventAccessData?.status === 'approved'}
+                                className={`h-12 px-6 rounded-full font-bold tracking-tight ${eventAccessData?.status === 'pending'
+                                    ? 'bg-titanium/[0.03] border-titanium/[0.08] text-titanium/40 cursor-not-allowed'
+                                    : eventAccessData?.status === 'approved' || eventAccessData?.has_access
+                                        ? 'bg-titanium/[0.03] border-titanium/[0.08] text-titanium/40 cursor-not-allowed'
+                                        : 'border-titanium/[0.15] text-titanium/70 hover:bg-titanium/[0.05]'
+                                    }`}
+                            >
+                                {eventAccessData?.status === 'pending' ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Request Pending
+                                    </>
+                                ) : eventAccessData?.status === 'approved' || eventAccessData?.has_access ? (
+                                    <>
+                                        <Unlock className="w-4 h-4 mr-2" />
+                                        Access Granted
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lock className="w-4 h-4 mr-2" />
+                                        Request Access
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

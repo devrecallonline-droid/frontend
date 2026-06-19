@@ -6,7 +6,7 @@ import { useAuth, useUI } from '@/hooks/use-api';
 import { useGetCollectionQuery, useDeleteCollectionMutation, useRemovePhotoFromCollectionMutation, type CollectionPhoto } from '@/lib/api';
 import Navigation from '@/components/Navigation';
 import { OptimizedImage } from '@/components/OptimizedImage';
-import { Button, Card, Badge } from '@/components/ui';
+
 import {
     Loader2,
     Image as ImageIcon,
@@ -126,7 +126,7 @@ const CollectionDetailPage = () => {
                 <Navigation />
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <Loader2 className="w-12 h-12 text-titanium animate-spin mb-6 opacity-20" />
-                    <p className="text-titanium/40 font-bold uppercase tracking-widest text-xs">Loading collection...</p>
+                    <p className="text-titanium/40 font-bold uppercase tracking-widest text-xs">Looking for collection...</p>
                 </div>
             </div>
         );
@@ -140,9 +140,11 @@ const CollectionDetailPage = () => {
                     <div className="w-20 h-20 bg-titanium/5 rounded-xl flex items-center justify-center mb-8">
                         <FolderOpen className="w-10 h-10 text-titanium opacity-10" />
                     </div>
-                    <h1 className="text-4xl font-black text-titanium mb-4 italic tracking-tight">Collection Not Found</h1>
-                    <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto">This collection does not exist or you do not have access to it.</p>
-                    <Button onClick={() => router.push('/collections')}>Back to Collections</Button>
+                    <h1 className="text-4xl font-black text-titanium mb-4 italic tracking-tight">Not Found</h1>
+                    <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto">This collection doesn't exist or you don't have access.</p>
+                    <button onClick={() => router.push('/collections')} className="px-6 py-3 rounded-full border border-titanium/[0.08] text-titanium/40 hover:text-titanium text-sm font-bold transition-all cursor-pointer">
+                        Back to Collections
+                    </button>
                 </div>
             </div>
         );
@@ -165,15 +167,15 @@ const CollectionDetailPage = () => {
                 {/* Collection Header */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-16">
                     <div className="lg:col-span-3">
-                        <div className="rounded-3xl p-6 sm:p-10 bg-white/60 backdrop-blur-sm border border-white/60 shadow-lg h-full flex flex-col justify-between">
+                        <div className="border border-titanium/[0.08] rounded-[24px] p-6 sm:p-10 h-full flex flex-col justify-between">
                             <div>
                                 <div className="flex flex-wrap items-center gap-2 mb-8">
-                                    <Badge variant="secondary" className="bg-titanium/5 text-titanium">
-                                        My Collection
-                                    </Badge>
-                                    <Badge variant="secondary" className="bg-titanium/5 text-titanium">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-titanium/30 border border-titanium/[0.08] rounded-full px-3 py-1">
+                                        Collection
+                                    </span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-titanium/30 border border-titanium/[0.08] rounded-full px-3 py-1">
                                         {collection.photo_count} Photos
-                                    </Badge>
+                                    </span>
                                 </div>
 
                                 <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-titanium mb-6 tracking-tighter leading-[0.9]">
@@ -185,7 +187,7 @@ const CollectionDetailPage = () => {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 pt-10 border-t border-black/5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 pt-10 border-t border-titanium/[0.06]">
                                 <div className="flex items-center">
                                     <div className="w-10 h-10 bg-titanium/5 rounded-lg flex items-center justify-center mr-4 text-titanium">
                                         <Calendar className="w-5 h-5" />
@@ -211,28 +213,27 @@ const CollectionDetailPage = () => {
                     </div>
 
                     <div className="lg:col-span-1">
-                        <div className="rounded-3xl p-8 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl h-full flex flex-col justify-center">
-                            <h3 className="text-2xl font-black mb-4 tracking-tight text-white">Actions</h3>
-                            <p className="text-slate-300 mb-10 text-sm font-medium leading-relaxed">
-                                Download all photos or manage this collection.
+                        <div className="border border-titanium/[0.08] rounded-[24px] p-8 bg-titanium h-full flex flex-col justify-center">
+                            <h3 className="text-2xl font-black mb-4 tracking-tight text-ivory">Actions</h3>
+                            <p className="text-ivory/50 mb-10 text-sm font-medium leading-relaxed">
+                                Download everything or manage this collection.
                             </p>
                             <div className="space-y-4">
-                                <Button
+                                <button
                                     onClick={handleDownloadAll}
                                     disabled={!collection.photos || collection.photos.length === 0}
-                                    className="w-full bg-white text-slate-900 hover:bg-slate-100 py-6 h-auto font-semibold"
+                                    className="w-full py-4 rounded-full bg-ivory text-titanium hover:bg-ivory/90 text-sm font-bold transition-all cursor-pointer disabled:opacity-30"
                                 >
-                                    <Download className="w-5 h-5 mr-3" />
+                                    <Download className="w-5 h-5 mr-3 inline" />
                                     Download All
-                                </Button>
-                                <Button
+                                </button>
+                                <button
                                     onClick={handleDeleteCollection}
-                                    variant="outline"
-                                    className="w-full py-6 h-auto bg-transparent text-red-400 border-red-400/30 hover:bg-red-400/10 hover:text-red-300 font-semibold"
+                                    className="w-full py-4 rounded-full border border-ivory/20 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 text-sm font-bold transition-all cursor-pointer"
                                 >
-                                    <Trash2 className="w-5 h-5 mr-3" />
+                                    <Trash2 className="w-5 h-5 mr-3 inline" />
                                     Delete Collection
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -305,7 +306,7 @@ const CollectionDetailPage = () => {
                                 No Photos
                             </h3>
                             <p className="text-titanium/40 font-medium max-w-xs mx-auto">
-                                This collection is empty. Photos you find in events will appear here.
+                                This collection is empty. Found photos will appear here.
                             </p>
                         </div>
                     )}
@@ -351,15 +352,13 @@ const CollectionDetailPage = () => {
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
+                                <button
                                     onClick={() => handleDownloadPhoto(selectedPhoto)}
-                                    className="text-white hover:bg-white/10"
+                                    className="px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 text-sm font-bold transition-all cursor-pointer"
                                 >
-                                    <Download className="w-4 h-4 mr-2" />
+                                    <Download className="w-4 h-4 mr-2 inline" />
                                     Download
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     </div>

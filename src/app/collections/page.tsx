@@ -6,7 +6,7 @@ import { useAuth, useUI } from '@/hooks/use-api';
 import { useGetCollectionsQuery, useDeleteCollectionMutation, type Collection } from '@/lib/api';
 import Navigation from '@/components/Navigation';
 import { OptimizedImage } from '@/components/OptimizedImage';
-import { Button, Card, Badge } from '@/components/ui';
+
 import {
     Loader2,
     Image as ImageIcon,
@@ -55,7 +55,7 @@ const CollectionsPage = () => {
                 <Navigation />
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <Loader2 className="w-12 h-12 text-titanium animate-spin mb-6 opacity-20" />
-                    <p className="text-titanium/40 font-bold uppercase tracking-widest text-xs">Loading your collections...</p>
+                    <p className="text-titanium/40 font-bold uppercase tracking-widest text-xs">Looking for collections...</p>
                 </div>
             </div>
         );
@@ -69,9 +69,11 @@ const CollectionsPage = () => {
                     <div className="w-20 h-20 bg-titanium/5 rounded-xl flex items-center justify-center mb-8">
                         <ImageIcon className="w-10 h-10 text-titanium opacity-10" />
                     </div>
-                    <h1 className="text-4xl font-black text-titanium mb-4 italic tracking-tight">Error Loading Collections</h1>
-                    <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto">Something went wrong while loading your collections.</p>
-                    <Button onClick={() => router.push('/events')}>Back to Events</Button>
+                    <h1 className="text-4xl font-black text-titanium mb-4 italic tracking-tight">Something Went Wrong</h1>
+                    <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto">We couldn't load your collections right now.</p>
+                    <button onClick={() => router.push('/events')} className="px-6 py-3 rounded-full border border-titanium/[0.08] text-titanium/40 hover:text-titanium text-sm font-bold transition-all cursor-pointer">
+                        Back to Events
+                    </button>
                 </div>
             </div>
         );
@@ -97,7 +99,7 @@ const CollectionsPage = () => {
                         My Collections
                     </h1>
                     <p className="text-xl text-titanium/60 max-w-2xl font-medium leading-relaxed">
-                        Your saved photo searches from events. Each collection contains photos where you were found.
+                        Photos you've found, gathered in one place.
                     </p>
                 </div>
 
@@ -105,9 +107,9 @@ const CollectionsPage = () => {
                 {collections && collections.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {collections.map((collection: Collection) => (
-                            <Card
+                            <div
                                 key={collection.id}
-                                className="overflow-hidden bg-white/40 border-white/60 cursor-pointer hover:shadow-lg transition-shadow"
+                                className="border border-titanium/[0.08] rounded-[24px] overflow-hidden cursor-pointer transition-all hover:bg-titanium/[0.02]"
                                 onClick={() => router.push(`/collections/${collection.id}`)}
                             >
                                 {/* Collection Thumbnail */}
@@ -145,27 +147,27 @@ const CollectionsPage = () => {
                                     </div>
                                     
                                     <div className="flex items-center justify-between">
-                                        <Badge variant="secondary" className="bg-titanium/5 text-titanium">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-titanium/30 border border-titanium/[0.08] rounded-full px-3 py-1">
                                             {collection.event_title}
-                                        </Badge>
+                                        </span>
                                         
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDeleteCollection(collection.id, collection.name);
                                             }}
-                                            className="p-2 text-titanium/40 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                            className="p-2 text-titanium/40 hover:text-red-500 hover:bg-red-500/5 rounded-full transition-colors"
                                             title="Delete Collection"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="py-40 text-center bg-white/40 rounded-xl border-dashed border-2 border-black/5">
+                    <div className="py-40 text-center border border-titanium/[0.08] rounded-[24px] border-dashed">
                         <div className="w-20 h-20 bg-titanium/5 rounded-xl flex items-center justify-center mx-auto mb-8">
                             <FolderOpen className="w-10 h-10 text-titanium opacity-10" />
                         </div>
@@ -173,11 +175,11 @@ const CollectionsPage = () => {
                             No Collections Yet
                         </h3>
                         <p className="text-titanium/40 font-medium mb-12 max-w-xs mx-auto">
-                            Search for photos in events and they will be automatically saved here.
+                            Find yourself in an event photo and it will be saved here.
                         </p>
-                        <Button variant="outline" className="px-10 h-14" onClick={() => router.push('/events')}>
+                        <button onClick={() => router.push('/events')} className="px-10 h-14 rounded-full border border-titanium/[0.08] text-titanium font-bold text-sm hover:bg-titanium/[0.03] transition-all cursor-pointer">
                             Browse Events
-                        </Button>
+                        </button>
                     </div>
                 )}
             </main>

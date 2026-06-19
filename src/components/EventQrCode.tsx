@@ -10,9 +10,10 @@ interface EventQrCodeProps {
   eventName: string;
   className?: string;
   lightMode?: boolean;
+  trigger?: React.ReactNode;
 }
 
-export function EventQrCode({ url, eventName, className = '', lightMode = false }: EventQrCodeProps) {
+export function EventQrCode({ url, eventName, className = '', lightMode = false, trigger }: EventQrCodeProps) {
   const qrRef = useRef<SVGSVGElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [logoBase64, setLogoBase64] = useState<string | undefined>(undefined);
@@ -134,52 +135,58 @@ export function EventQrCode({ url, eventName, className = '', lightMode = false 
 
   return (
     <>
-      {/* Large Visible QR Card Trigger */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`group relative flex flex-col items-center p-4 rounded-3xl backdrop-blur-sm transition-all duration-500 ease-out transform sm:hover:scale-105 border shadow-xl w-full sm:w-auto ${
-          lightMode 
-            ? 'bg-white border-slate-200 hover:shadow-indigo-500/10' 
-            : 'bg-slate-900/50 border-white/10 hover:bg-slate-800/80 hover:shadow-white/5'
-        } ${className}`}
-      >
-        <div className="bg-white p-3 rounded-2xl shadow-inner mb-3">
-            <QRCodeSVG 
-                value={url} 
-                size={140} 
-                level="H" 
-                marginSize={0}
-                bgColor="#FFFFFF"
-                fgColor="#0F172A"
-                imageSettings={logoBase64 ? {
-                    src: logoBase64,
-                    height: 36,
-                    width: 36,
-                    excavate: true,
-                } : undefined}
-            />
+      {/* Trigger */}
+      {trigger ? (
+        <div onClick={() => setIsOpen(true)} className="cursor-pointer inline-block">
+            {trigger}
         </div>
-        
-        <div className="flex items-center gap-2">
-            <div className={`flex items-center justify-center w-6 h-6 rounded-lg ${
-              lightMode ? 'bg-indigo-50 text-indigo-600' : 'bg-white/10 text-white'
-            }`}>
-              <ScanFace className="w-3.5 h-3.5" />
+      ) : (
+        <button
+            onClick={() => setIsOpen(true)}
+            className={`group relative flex flex-col items-center p-4 rounded-3xl backdrop-blur-sm transition-all duration-500 ease-out transform sm:hover:scale-105 border shadow-xl w-full sm:w-auto ${
+            lightMode 
+                ? 'bg-white border-slate-200 hover:shadow-indigo-500/10' 
+                : 'bg-slate-900/50 border-white/10 hover:bg-slate-800/80 hover:shadow-white/5'
+            } ${className}`}
+        >
+            <div className="bg-white p-3 rounded-2xl shadow-inner mb-3">
+                <QRCodeSVG 
+                    value={url} 
+                    size={140} 
+                    level="H" 
+                    marginSize={0}
+                    bgColor="#FFFFFF"
+                    fgColor="#0F172A"
+                    imageSettings={logoBase64 ? {
+                        src: logoBase64,
+                        height: 36,
+                        width: 36,
+                        excavate: true,
+                    } : undefined}
+                />
             </div>
-            <div className="flex flex-col items-start pr-1 text-left">
-              <span className={`text-[9px] font-black uppercase tracking-widest leading-none mb-0.5 ${
-                lightMode ? 'text-slate-400' : 'text-white/40'
-              }`}>
-                Click to Enlarge
-              </span>
-              <span className={`text-xs font-bold tracking-wide leading-none ${
-                lightMode ? 'text-slate-800' : 'text-white'
-              }`}>
-                Get Event Pass
-              </span>
+            
+            <div className="flex items-center gap-2">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-lg ${
+                lightMode ? 'bg-indigo-50 text-indigo-600' : 'bg-white/10 text-white'
+                }`}>
+                <ScanFace className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex flex-col items-start pr-1 text-left">
+                <span className={`text-[9px] font-black uppercase tracking-widest leading-none mb-0.5 ${
+                    lightMode ? 'text-slate-400' : 'text-white/40'
+                }`}>
+                    Click to Enlarge
+                </span>
+                <span className={`text-xs font-bold tracking-wide leading-none ${
+                    lightMode ? 'text-slate-800' : 'text-white'
+                }`}>
+                    Get Event Pass
+                </span>
+                </div>
             </div>
-        </div>
-      </button>
+        </button>
+      )}
 
       {/* Replaced Modal with a custom full-screen/large modal approach for a massive QR card */}
       {isOpen && (

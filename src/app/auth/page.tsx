@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useUI } from '@/hooks/use-api';
 import { GoogleLogin } from '@react-oauth/google';
 import Navigation from '@/components/Navigation';
-import { Button, Card, Input } from '@/components/ui';
-import { UserCircle, ShieldCheck, Mail, ArrowRight, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const AuthPage = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -30,7 +29,7 @@ const AuthPage = () => {
         if (mounted && isAuthenticated) {
             const urlParams = new URLSearchParams(window.location.search);
             const returnUrl = urlParams.get('returnUrl');
-            
+
             if (returnUrl && returnUrl.startsWith('/')) {
                 router.push(returnUrl);
             } else {
@@ -43,28 +42,15 @@ const AuthPage = () => {
         e.preventDefault();
         try {
             if (isLogin) {
-                // Login uses email and password
-                console.log('Submitting login form...');
                 await login({ email: formData.email, password: formData.password });
             } else {
-                // Register uses username, email, and password
-                console.log('Submitting registration form...');
                 await register(formData);
             }
         } catch (err: any) {
-            console.error('Full auth error:', err);
-            console.error('Auth error detail:', {
-                status: err?.status,
-                statusCode: err?.statusCode,
-                data: err?.data,
-                error: err?.error,
-                message: err?.message,
-                originalStatus: err?.originalStatus
-            });
             const errorMsg = err?.data?.detail || err?.data?.message || err?.error || err?.message || 'Authentication failed. Please check your credentials.';
             addAlert({
                 type: 'error',
-                message: `❌ ${errorMsg}`
+                message: errorMsg
             });
         }
     };
@@ -74,11 +60,10 @@ const AuthPage = () => {
             try {
                 await googleLogin(credentialResponse.credential);
             } catch (err: any) {
-                console.error('Google login error:', err);
                 const errorMsg = err?.data?.detail || 'Google login failed';
                 addAlert({
                     type: 'error',
-                    message: `❌ ${errorMsg}`
+                    message: errorMsg
                 });
             }
         }
@@ -87,7 +72,7 @@ const AuthPage = () => {
     const handleGoogleError = () => {
         addAlert({
             type: 'error',
-            message: '❌ Google sign-in was cancelled or failed'
+            message: 'Google sign-in was cancelled or failed'
         });
     };
 
@@ -104,34 +89,26 @@ const AuthPage = () => {
         <div className="min-h-screen bg-ivory flex flex-col">
             <Navigation />
 
-            <main className="flex-1 flex items-center justify-center p-6 pt-32">
-                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-[100px]"></div>
-                </div>
-
-                <Card className="w-full max-w-md animate-slide-up relative z-10 border-white/40 shadow-2xl">
-                    <div className="text-center mb-10">
-                        <div className="inline-flex h-20 w-20 bg-titanium rounded-apple-lg items-center justify-center text-white mb-6 premium-shadow">
-                            <ShieldCheck className="w-10 h-10" />
-                        </div>
-                        <h1 className="text-4xl font-black text-titanium mb-3 tracking-tighter shrink-0">
-                            {isLogin ? 'Welcome Back' : 'Create Account'}
+            <main className="flex-1 flex items-center justify-center px-6">
+                <div className="w-full max-w-sm py-24">
+                    <div className="mb-10">
+                        <h1 className="text-3xl sm:text-4xl font-black text-titanium tracking-tighter mb-3">
+                            {isLogin ? 'Welcome back' : 'Create account'}
                         </h1>
-                        <p className="text-titanium/50 font-medium">
+                        <p className="text-titanium/45 text-base font-medium">
                             {isLogin
-                                ? 'Sign in to your account'
-                                : 'Get started with Remember'}
+                                ? 'Sign in to your account to continue.'
+                                : 'Get started with Nenge.'}
                         </p>
                     </div>
 
-                    {/* Google Sign-In Button */}
                     <div className="mb-6">
                         <div className="flex justify-center">
                             <GoogleLogin
                                 onSuccess={handleGoogleSuccess}
                                 onError={handleGoogleError}
                                 size="large"
-                                width="100%"
+                                width="384"
                                 theme="outline"
                                 text={isLogin ? 'signin_with' : 'signup_with'}
                                 shape="pill"
@@ -139,107 +116,90 @@ const AuthPage = () => {
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <div className="relative mb-6">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-black/10"></div>
+                            <div className="w-full border-t border-black/8" />
                         </div>
                         <div className="relative flex justify-center text-xs">
-                            <span className="px-4 bg-white text-titanium/40 font-semibold uppercase tracking-wider">
+                            <span className="px-4 bg-ivory text-titanium/30 font-semibold uppercase tracking-wider">
                                 or
                             </span>
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Username field - only show for registration */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         {!isLogin && (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-titanium/40 flex items-center ml-1">
-                                    <UserCircle className="w-3 h-3 mr-2" />
-                                    Username
-                                </label>
-                                <Input
+                            <div>
+                                <input
                                     name="username"
                                     type="text"
-                                    placeholder="Enter your username"
+                                    placeholder="Username"
                                     value={formData.username}
                                     onChange={handleInputChange}
                                     required={!isLogin}
+                                    className="w-full h-12 px-4 bg-white border border-black/8 rounded-lg text-sm text-titanium placeholder:text-titanium/25 font-medium focus:outline-none focus:border-titanium/30 focus:ring-0 transition-colors"
                                 />
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-titanium/40 flex items-center ml-1">
-                                <Mail className="w-3 h-3 mr-2" />
-                                Email
-                            </label>
-                            <Input
+                        <div>
+                            <input
                                 name="email"
                                 type="email"
                                 placeholder="name@example.com"
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 required
+                                className="w-full h-12 px-4 bg-white border border-black/8 rounded-lg text-sm text-titanium placeholder:text-titanium/25 font-medium focus:outline-none focus:border-titanium/30 focus:ring-0 transition-colors"
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-titanium/40 flex items-center ml-1">
-                                <Lock className="w-3 h-3 mr-2" />
-                                Password
-                            </label>
-                            <div className="relative">
-                                <Input
-                                    name="password"
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Enter your password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="pr-12"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-titanium/40 hover:text-titanium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black/10 rounded-full"
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
-                                >
-                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
-                            </div>
+                        <div className="relative">
+                            <input
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full h-12 px-4 pr-12 bg-white border border-black/8 rounded-lg text-sm text-titanium placeholder:text-titanium/25 font-medium focus:outline-none focus:border-titanium/30 focus:ring-0 transition-colors"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-titanium/25 hover:text-titanium/50 transition-colors focus:outline-none"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                         </div>
 
-                        <Button
+                        <button
                             type="submit"
-                            className="w-full h-14"
                             disabled={loading}
+                            className="w-full h-12 rounded-lg bg-titanium text-ivory text-sm font-semibold tracking-tight hover:bg-black transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         >
                             {loading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                                <>
-                                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                </>
+                                isLogin ? 'Sign In' : 'Create Account'
                             )}
-                        </Button>
+                        </button>
                     </form>
 
-                    <div className="mt-10 pt-8 border-t border-black/5 text-center">
-                        <p className="text-titanium/40 text-sm font-medium mb-4">
-                            {isLogin ? "Don't have an account?" : "Already have an account?"}
+                    <div className="mt-8 text-center">
+                        <p className="text-titanium/35 text-sm font-medium">
+                            {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+                            <button
+                                onClick={() => setIsLogin(!isLogin)}
+                                className="text-titanium/60 hover:text-titanium underline-offset-2 hover:underline font-semibold transition-colors"
+                            >
+                                {isLogin ? 'Create one.' : 'Sign in.'}
+                            </button>
                         </p>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setIsLogin(!isLogin)}
-                            className="w-full h-12"
-                        >
-                            {isLogin ? 'Create Account' : 'Sign In'}
-                        </Button>
                     </div>
-                </Card>
+                </div>
             </main>
         </div>
     );

@@ -153,11 +153,11 @@ const LandingPage = () => {
         <div className="flex flex-col items-center shrink-0 mt-2 sm:mt-4 z-10">
           {/* Headline */}
           <h1
-            className="text-[32px] sm:text-5xl md:text-[72px] font-black text-black tracking-tighter leading-[1.05] max-w-4xl animate-slide-up flex flex-col items-center"
+            className="text-[40px] sm:text-5xl md:text-[72px] font-black text-black tracking-tighter leading-[1.05] max-w-4xl animate-slide-up flex flex-col items-center"
             style={{ animationDelay: '0.15s', animationFillMode: 'both' }}
           >
-            <span>Find Your Best Moments</span>
-            <span className="text-black/30">in a Flash.</span>
+            <span>Some of your best moments</span>
+            <span className="text-black/30"> are waiting to be found.</span>
           </h1>
 
           {/* Subtitle */}
@@ -165,7 +165,7 @@ const LandingPage = () => {
             className="text-[15px] sm:text-[18px] text-black/80 mt-4 sm:mt-6 max-w-md font-medium leading-snug animate-slide-up"
             style={{ animationDelay: '0.25s', animationFillMode: 'both' }}
           >
-            From weddings to music festivals, Nenge helps you<br />find your photos instantly.
+            Every event creates thousands of memories. We help you find yours.
           </p>
         </div>
 
@@ -221,8 +221,9 @@ const LandingPage = () => {
           style={{ animationDelay: '0.45s', animationFillMode: 'both' }}
         >
           <p className="text-[12px] sm:text-[14px] text-black/80 font-medium leading-relaxed mb-2 sm:mb-3">
-            Just snap a quick selfie, and you'll see your best moments instantly in one place.<br className="hidden sm:block" />
-            No scrolling through thousands of images.
+            Find every photo that matters to you.
+            <br className="hidden sm:block" />
+            Upload a selfie and we'll do the rest.
           </p>
           
           <div className="flex items-center justify-center gap-6 sm:gap-8">
@@ -230,7 +231,7 @@ const LandingPage = () => {
               onClick={handleCreateEvent}
               className="text-sm sm:text-[15px] font-bold text-black underline underline-offset-4 decoration-black hover:decoration-black/50 transition-all duration-300 cursor-pointer"
             >
-              Create Event
+              Make Your Event Unforgettable
             </button>
             <button
               onClick={handleJoinEvent}
@@ -568,7 +569,7 @@ const LandingPage = () => {
               © {new Date().getFullYear()} Nenge. All rights reserved.
             </p>
             <p className="text-[11px] text-ivory/15 font-medium">
-              Find your photos. Keep your privacy.
+              Every Moment Deserves to Be Found
             </p>
           </div>
         </div>
